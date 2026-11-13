@@ -1,1 +1,1485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>代号：彴约</title>
+<style>
+:root{
+  --bg:#0f0f12;--fg:#d4d4d4;--dim:#666;--accent:#e8a84c;--dim2:#888;
+  --card:#1a1a22;--card2:#222230;--border:#333;
+  --green:#4caf50;--red:#e57373;--blue:#64b5f6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  line-height:1.7;padding:20px 16px;max-width:640px;margin:0 auto;
+  -webkit-font-smoothing:antialiased}
+h1{font-size:22px;color:var(--accent);text-align:center;margin-bottom:4px}
+.sub{text-align:center;color:var(--dim);font-size:13px;margin-bottom:20px}
+/* 面板切换 */
+.panel{display:none}
+.panel.active{display:block}
+/* 按钮 */
+.btn{display:block;width:100%;padding:14px;margin:10px 0;background:var(--card);
+  color:var(--fg);border:1px solid var(--border);border-radius:8px;
+  font-size:15px;cursor:pointer;transition:.2s;text-align:center}
+.btn:hover{background:var(--card2);border-color:var(--accent)}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
+.btn-primary:hover{background:#f0b858}
+.btn-small{display:inline-block;width:auto;padding:6px 14px;font-size:13px;margin:4px}
+/* 天赋选择 */
+.talent-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.talent-item{background:var(--card);border:1px solid var(--border);border-radius:6px;
+  padding:10px;cursor:pointer;transition:.15s;font-size:13px}
+.talent-item:hover{border-color:var(--accent)}
+.talent-item.selected{border-color:var(--accent);background:var(--card2)}
+.talent-item .t-name{font-weight:600;color:var(--fg);margin-bottom:2px}
+.talent-item .t-desc{color:var(--dim);font-size:12px}
+.talent-item.selected .t-name{color:var(--accent)}
+/* 加点 */
+.attr-row{display:flex;align-items:center;justify-content:space-between;
+  padding:10px;background:var(--card);border-radius:6px;margin:6px 0;border:1px solid var(--border)}
+.attr-row .a-name{font-size:14px;font-weight:600;width:60px}
+.attr-row .a-val{font-size:20px;font-weight:700;color:var(--accent);width:50px;text-align:center}
+.attr-row .a-btns{display:flex;gap:6px}
+.attr-btn{width:32px;height:32px;background:var(--card2);border:1px solid var(--border);
+  border-radius:50%;color:var(--fg);font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:.15s}
+.attr-btn:hover{border-color:var(--accent);color:var(--accent)}
+.attr-btn:disabled{opacity:.3;cursor:default}
+.points-info{text-align:center;color:var(--dim);font-size:13px;margin:8px 0}
+.points-info span{color:var(--accent);font-weight:700;font-size:16px}
+/* 游戏区 */
+.game-header{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid var(--border);margin-bottom:12px;flex-wrap:wrap;gap:6px}
+.game-header .g-title{font-size:16px;font-weight:700;color:var(--accent)}
+.game-header .g-age{font-size:13px;color:var(--dim)}
+.attr-bar{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin:8px 0}
+.attr-mini{background:var(--card);border-radius:4px;padding:6px;text-align:center;
+  border:1px solid var(--border)}
+.attr-mini .am-label{font-size:10px;color:var(--dim)}
+.attr-mini .am-val{font-size:16px;font-weight:700;color:var(--fg)}
+.event-log{min-height:200px;max-height:400px;overflow-y:auto;margin:10px 0}
+.event-entry{padding:10px;background:var(--card);border-radius:6px;margin:6px 0;
+  border:1px solid var(--border);font-size:14px;animation:fadeIn .3s}
+.event-entry .e-age{color:var(--accent);font-weight:700;font-size:12px;margin-bottom:4px}
+.event-entry .e-text{color:var(--fg)}
+.event-entry .e-choice{color:var(--dim);font-size:13px;margin-top:4px;font-style:italic}
+.event-entry .e-effect{color:var(--blue);font-size:12px;margin-top:4px}
+.event-entry .e-death{color:var(--red);font-weight:600}
+.event-entry .e-good{color:var(--green)}
+.event-entry .e-bad{color:var(--red)}
+/* 事件选择 */
+.choice-box{background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:14px;margin:10px 0}
+.choice-box .c-title{font-size:14px;font-weight:600;color:var(--accent);margin-bottom:8px}
+.choice-btn{display:block;width:100%;text-align:left;padding:10px;margin:6px 0;
+  background:var(--card2);border:1px solid var(--border);border-radius:6px;
+  color:var(--fg);font-size:14px;cursor:pointer;transition:.15s}
+.choice-btn:hover{border-color:var(--accent)}
+.choice-btn:active{transform:scale(.98)}
+/* 结算 */
+.death-report{text-align:center;padding:20px 0}
+.death-report .dr-age{font-size:48px;font-weight:700;color:var(--accent);margin:10px 0}
+.dr-label{font-size:14px;color:var(--dim);margin:4px 0}
+.dr-label span{color:var(--fg)}
+.dr-tags{margin:16px 0;text-align:left}
+.dr-tag{padding:8px 12px;background:var(--card);border-radius:6px;margin:6px 0;
+  border:1px solid var(--border);font-size:14px}
+.dr-tag .dt-key{color:var(--accent);font-weight:600;margin-right:8px}
+.dr-tag .dt-val{color:var(--fg)}
+.dr-recall{margin:16px 0;text-align:left}
+.dr-recall-item{padding:6px 0;color:var(--dim);font-size:13px;border-left:2px solid var(--border);padding-left:12px;margin:6px 0}
+.dr-remorse{margin:16px 0;padding:14px;background:var(--card);border-radius:8px;
+  border:1px solid var(--border);font-size:14px;color:var(--fg)}
+.dr-score{font-size:60px;font-weight:700;color:var(--accent);margin:16px 0}
+.dr-score-label{font-size:14px;color:var(--dim)}
+.dr-score-sub{font-size:13px;color:var(--dim);margin-top:4px}
+/* 时间指示 */
+.time-indicator{text-align:center;font-size:12px;color:var(--dim);margin:6px 0}
+.time-indicator .t-num{color:var(--accent);font-weight:700}
+/* 滚动条 */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+/* 动画 */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.pulse{animation:pulse 1s infinite}
+/* 模式切换 */
+.mode-tabs{display:flex;gap:0;margin:10px 0}
+.mode-tab{flex:1;text-align:center;padding:10px;background:var(--card);
+  border:1px solid var(--border);color:var(--dim);font-size:14px;cursor:pointer;transition:.2s}
+.mode-tab:first-child{border-radius:8px 0 0 8px}
+.mode-tab:last-child{border-radius:0 8px 8px 0}
+.mode-tab.active{background:var(--accent);color:#000;font-weight:600;border-color:var(--accent)}
+/* 随机刷新区 */
+.random-display{background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:14px;margin:10px 0;min-height:80px}
+.random-display .rd-label{font-size:12px;color:var(--dim);margin-bottom:8px}
+.rd-items{display:flex;flex-wrap:wrap;gap:6px}
+.rd-item{padding:4px 10px;background:var(--card2);border-radius:4px;
+  font-size:13px;border:1px solid var(--border);color:var(--fg)}
+.rd-item.rd-good{border-color:var(--green);color:var(--green)}
+/* 出身选择 */
+.origin-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.origin-item{padding:10px;background:var(--card);border:1px solid var(--border);
+  border-radius:6px;cursor:pointer;font-size:13px;transition:.15s}
+.origin-item:hover{border-color:var(--accent)}
+.origin-item.selected{border-color:var(--accent);background:var(--card2)}
+.origin-item .o-name{font-weight:600}
+.origin-item .o-desc{color:var(--dim);font-size:11px;margin-top:2px}
+/* 家境显示 */
+.wealth-display{margin:10px 0;padding:10px;background:var(--card);border-radius:6px;
+  border:1px solid var(--border);font-size:13px;color:var(--dim)}
+.wealth-display span{color:var(--accent);font-weight:600}
+</style>
+</head>
+<body>
 
+<h1>代号：彴约</h1>
+<div class="sub">流星划过，短暂而灿烂</div>
+
+<!-- ===== 面板1：开局 ===== -->
+<div id="panel-start" class="panel active">
+
+  <!-- 模式选择 -->
+  <div style="margin-bottom:16px">
+    <div style="font-size:13px;color:var(--dim);margin-bottom:6px">开局模式</div>
+    <div class="mode-tabs">
+      <div class="mode-tab active" data-mode="custom" onclick="switchMode('custom')">定制模式</div>
+      <div class="mode-tab" data-mode="random" onclick="switchMode('random')">随机模式</div>
+    </div>
+  </div>
+
+  <!-- 天赋 -->
+  <div style="font-size:14px;font-weight:600;margin:14px 0 6px;color:var(--fg)">天赋</div>
+  <div id="talent-custom">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px">自由勾选，无上限</div>
+    <div class="talent-grid" id="talent-grid"></div>
+  </div>
+  <div id="talent-random" style="display:none">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px">
+      随机刷新 <span id="rd-count" style="color:var(--accent)">?</span> 个天赋，接或重刷
+    </div>
+    <div class="random-display" id="random-talents">
+      <div class="rd-label">点击下方按钮刷新</div>
+      <div class="rd-items" id="rd-items"><span style="color:var(--dim);font-size:13px">尚未刷新</span></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-small" onclick="refreshRandomTalents()">刷新</button>
+      <button class="btn btn-small" onclick="confirmRandomTalents()" id="btn-confirm-talents" disabled>接住</button>
+    </div>
+  </div>
+  <div id="selected-talents-info" style="margin-top:8px;font-size:13px;color:var(--dim)"></div>
+
+  <!-- 四维加点 -->
+  <div style="font-size:14px;font-weight:600;margin:18px 0 6px;color:var(--fg)">四维属性</div>
+  <div class="points-info" id="points-info">剩余 <span id="points-left">20</span> 点</div>
+
+  <div id="attr-custom">
+    <div class="attr-row">
+      <div class="a-name">颜值</div>
+      <div class="a-val" id="val-yanzhi">0</div>
+      <div class="a-btns">
+        <button class="attr-btn" onclick="changeAttr('yanzhi',-1)">-</button>
+        <button class="attr-btn" onclick="changeAttr('yanzhi',1)">+</button>
+      </div>
+    </div>
+    <div class="attr-row">
+      <div class="a-name">智力</div>
+      <div class="a-val" id="val-zhili">0</div>
+      <div class="a-btns">
+        <button class="attr-btn" onclick="changeAttr('zhili',-1)">-</button>
+        <button class="attr-btn" onclick="changeAttr('zhili',1)">+</button>
+      </div>
+    </div>
+    <div class="attr-row">
+      <div class="a-name">体质</div>
+      <div class="a-val" id="val-tizhi">0</div>
+      <div class="a-btns">
+        <button class="attr-btn" onclick="changeAttr('tizhi',-1)">-</button>
+        <button class="attr-btn" onclick="changeAttr('tizhi',1)">+</button>
+      </div>
+    </div>
+    <div class="attr-row">
+      <div class="a-name">家境</div>
+      <div class="a-val" id="val-jiajing">0</div>
+      <div class="a-btns">
+        <button class="attr-btn" onclick="changeAttr('jiajing',-1)">-</button>
+        <button class="attr-btn" onclick="changeAttr('jiajing',1)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="attr-random" style="display:none">
+    <div class="random-display" id="random-attrs">
+      <div class="rd-label">点击下方按钮随机分配</div>
+      <div class="rd-items" id="ra-items"><span style="color:var(--dim);font-size:13px">尚未分配</span></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-small" onclick="rollRandomAttrs()">随机分配</button>
+      <button class="btn btn-small" onclick="confirmRandomAttrs()" id="btn-confirm-attrs" disabled>确认</button>
+    </div>
+  </div>
+
+  <!-- 出身（写死在 HTML，不依赖 JS 渲染） -->
+  <div style="font-size:14px;font-weight:600;margin:18px 0 6px;color:var(--fg)">出身</div>
+  <div class="origin-grid" id="origin-grid">
+    <div class="origin-item" id="origin-tier1" onclick="selectOrigin('tier1')">
+      <div class="o-name">一线城市</div>
+      <div class="o-desc">北京/上海/广深</div>
+    </div>
+    <div class="origin-item" id="origin-tier2" onclick="selectOrigin('tier2')">
+      <div class="o-name">二线城市</div>
+      <div class="o-desc">杭州/成都/武汉</div>
+    </div>
+    <div class="origin-item" id="origin-county" onclick="selectOrigin('county')">
+      <div class="o-name">县城</div>
+      <div class="o-desc">小县城</div>
+    </div>
+    <div class="origin-item" id="origin-rural" onclick="selectOrigin('rural')">
+      <div class="o-name">农村</div>
+      <div class="o-desc">乡镇/村庄</div>
+    </div>
+  </div>
+
+  <!-- 家境预览 -->
+  <div class="wealth-display" id="wealth-preview" style="display:none"></div>
+
+  <button class="btn btn-primary" id="btn-start" onclick="startGame()" disabled style="margin-top:16px">
+    开始人生
+  </button>
+  <div style="font-size:11px;color:var(--dim);text-align:center;margin-top:6px">
+    现实 1 秒 = 游戏 1 天 · 彴约，流星划过
+  </div>
+</div>
+
+<!-- ===== 面板2：游戏 ===== -->
+<div id="panel-game" class="panel">
+  <div class="game-header">
+    <div>
+      <div class="g-title" id="g-phase">童年</div>
+      <div class="g-age" id="g-age">0 岁 0 天</div>
+    </div>
+    <div style="font-size:12px;color:var(--dim)" id="g-day">第 1 天</div>
+  </div>
+  <div class="attr-bar" id="attr-bar">
+    <div class="attr-mini"><div class="am-label">颜值</div><div class="am-val" id="gb-yanzhi">0</div></div>
+    <div class="attr-mini"><div class="am-label">智力</div><div class="am-val" id="gb-zhili">0</div></div>
+    <div class="attr-mini"><div class="am-label">体质</div><div class="am-val" id="gb-tizhi">0</div></div>
+    <div class="attr-mini"><div class="am-label">家境</div><div class="am-val" id="gb-jiajing">0</div></div>
+  </div>
+  <div class="time-indicator">
+    <span class="t-num" id="t-num">--</span> 天后触发下一个事件
+  </div>
+  <div class="event-log" id="event-log"></div>
+  <div id="event-choice" style="display:none"></div>
+  <div id="death-panel" style="display:none"></div>
+</div>
+
+<script>
+// ========== 天赋池（36个） ==========
+const TALENTS = [
+  // 基础四维
+  {id:"early",name:"早慧",desc:"智力+2，童年事件选项更多",fx:{zhili:2}},
+  {id:"fit",name:"身体好",desc:"体质+2，健康衰减慢",fx:{tizhi:2}},
+  {id:"rich",name:"家境优渥",desc:"家境+3，但父母期待高",fx:{jiajing:3}},
+  {id:"art",name:"艺术细胞",desc:"颜值+1，艺术类事件解锁特殊分支",fx:{yanzhi:1},tag:"art"},
+  {id:"social",name:"社牛",desc:"颜值+1，关系类事件正面概率+",fx:{yanzhi:1},tag:"social"},
+  {id:"skew",name:"偏科",desc:"智力+3，体质-1",fx:{zhili:3,tizhi:-1}},
+  {id:"rebel",name:"叛逆",desc:"体质+1，青春期事件选项不同",fx:{tizhi:1},tag:"rebel"},
+  {id:"nice",name:"老好人",desc:"同事关系好，职场晋升慢",fx:{},tag:"nice"},
+  {id:"health",name:"养生达人",desc:"体质+2，中年健康事件正面",fx:{tizhi:2},tag:"health"},
+  {id:"night",name:"夜猫子",desc:"体质-1，加班少扣体质",fx:{tizhi:-1},tag:"night"},
+  {id:"top",name:"学霸",desc:"智力+3，学业事件正面",fx:{zhili:3},tag:"top"},
+  {id:"shy",name:"社恐",desc:"颜值-1，关系负面，独处正面",fx:{yanzhi:-1},tag:"shy"},
+  // 稀有
+  {id:"star",name:"星途",desc:"颜值+3，容易走演艺圈",fx:{yanzhi:3},tag:"star",rare:true},
+  {id:"genius",name:"天才",desc:"智力+4，解锁科研/创业捷径",fx:{zhili:4},tag:"genius",rare:true},
+  {id:"iron",name:"铁人",desc:"体质+4，几乎不生病",fx:{tizhi:4},tag:"iron",rare:true},
+  {id:"tycoon",name:"巨富投胎",desc:"家境+5，出生即富豪",fx:{jiajing:5},tag:"tycoon",rare:true},
+  {id:"box",name:"神秘小盒子",desc:"活到80岁可解锁隐藏结局",fx:{},tag:"box",rare:true},
+  {id:"charm",name:"万人迷",desc:"颜值+2，魅力+，事件选项更多",fx:{yanzhi:2},tag:"charm",rare:true},
+  {id:"lucky",name:"锦鲤体质",desc:"所有随机事件正面概率+30%",fx:{},tag:"lucky",rare:true},
+  {id:"curse",name:"命硬",desc:"体质-3，但极难死掉",fx:{tizhi:-3},tag:"curse",rare:true},
+  // 中性/干扰
+  {id:"lazy",name:"懒散",desc:"智力-1，但压力小",fx:{zhili:-1},tag:"lazy"},
+  {id:"impulsive",name:"冲动",desc:"事件选项更少，后果更极端",fx:{},tag:"impulsive"},
+  {id:"overthink",name:"想太多",desc:"体质-1，事件选择时间+2s",fx:{tizhi:-1},tag:"overthink"},
+  {id:"frugal",name:"抠门",desc:"家境-1，但储蓄事件正面",fx:{jiajing:-1},tag:"frugal"},
+  {id:"gamer",name:"游戏天才",desc:"智力+1，但学业-1",fx:{zhili:1},tag:"gamer"},
+  {id:"athlete",name:"运动健将",desc:"体质+2，智力-1",fx:{tizhi:2,zhili:-1},tag:"athlete"},
+  {id:"chef",name:"天生厨子",desc:"家境+1，生活事件正面",fx:{jiajing:1},tag:"chef"},
+  {id:"writer",name:"文青",desc:"智力+1，颜值+1，但赚钱慢",fx:{zhili:1,yanzhi:1},tag:"writer"},
+  {id:"business",name:"商业嗅觉",desc:"家境+2，创业事件正面",fx:{jiajing:2},tag:"business"},
+  {id:"doctor",name:"医者仁心",desc:"体质+1，健康类事件正面",fx:{tizhi:1},tag:"doctor"},
+  {id:"soldier",name:"兵痞",desc:"体质+2，颜值-1，关系事件负面",fx:{tizhi:2,yanzhi:-1},tag:"soldier"},
+  {id:"dancer",name:"舞林高手",desc:"体质+1，颜值+2，艺术事件正面",fx:{tizhi:1,yanzhi:2},tag:"dancer"},
+  {id:"poor",name:"穷小子",desc:"家境-2，但逆袭事件正面",fx:{jiajing:-2},tag:"poor"},
+  {id:"prince",name:"富二代",desc:"家境+4，但人生缺乏动力",fx:{jiajing:4},tag:"prince"},
+  {id:"orphan",name:"孤儿",desc:"家境-2，关系事件负面，但独立+3",fx:{jiajing:-2},tag:"orphan"},
+  {id:"twins",name:"双胞胎",desc:"关系(兄弟姐妹)+20，事件选项不同",fx:{},tag:"twins"},
+];
+
+// ========== 出身 ==========
+const ORIGINS = [
+  {id:"tier1",name:"一线城市",desc:"北京/上海/广深",city:"一线"},
+  {id:"tier2",name:"二线城市",desc:"杭州/成都/武汉",city:"二线"},
+  {id:"county",name:"县城",desc:"小县城",city:"县城"},
+  {id:"rural",name:"农村",desc:"乡镇/村庄",city:"农村"},
+];
+const WEALTH_LEVELS = [
+  {id:"poor",name:"贫穷",desc:"低保/靠救济",range:[0,2],income:"<3万"},
+  {id:"barely",name:"温饱",desc:"打工刚够活",range:[3,4],income:"3~6万"},
+  {id:"comfort",name:"小康",desc:"普通城市家庭",range:[5,7],income:"6~15万"},
+  {id:"rich",name:"富裕",desc:"中产/多套房产",range:[8,9],income:"15~50万"},
+  {id:"super",name:"巨富",desc:"企业主/富二代",range:[10,10],income:">50万"},
+];
+
+// ========== 事件卡（150张） ==========
+const EVENTS = [
+  // ===== 童年 (0-12) =====
+  {id:"c1",phase:"child",age:[2,4],text:"你第一次走路，摔了一跤。",choices:[
+    {text:"哭，等大人来扶",fx:{tizhi:-1},good:true},
+    {text:"自己爬起来",fx:{zhili:1},good:true},
+    {text:"躺地上不起来",fx:{},good:false},
+  ]},
+  {id:"c2",phase:"child",age:[3,5],text:"幼儿园里，小朋友抢你的玩具。",choices:[
+    {text:"抢回来",fx:{tizhi:1,yanzhi:-1}},
+    {text:"让他拿，回家哭",fx:{yanzhi:-1},good:false},
+    {text:"告诉老师",fx:{zhili:1}},
+  ]},
+  {id:"c3",phase:"child",age:[5,7],text:"父母吵了一架，你被要求选一个住。",choices:[
+    {text:"跟爸爸",fx:{zhili:1},good:true},
+    {text:"跟妈妈",fx:{yanzhi:1},good:true},
+    {text:"不选，谁也不跟",fx:{remorse:1},good:false},
+  ]},
+  {id:"c4",phase:"child",age:[6,8],text:"第一次考试，你得了 98 分。",choices:[
+    {text:"跟同学炫耀",fx:{yanzhi:1,zhili:-1}},
+    {text:"回家给爸妈看",fx:{jiajing:1},good:true},
+    {text:"把卷子藏起来",fx:{zhili:1},good:false},
+  ]},
+  {id:"c5",phase:"child",age:[7,9],text:"学校要选兴趣班，你只能选一个。",choices:[
+    {text:"书法",fx:{zhili:1},good:true},
+    {text:"篮球",fx:{tizhi:2},good:true},
+    {text:"钢琴",fx:{yanzhi:1},good:true},
+    {text:"不选，自己玩",fx:{},good:false},
+  ]},
+  {id:"c6",phase:"child",age:[8,10],text:"邻居家的猫生了小猫，你想养一只。",choices:[
+    {text:"养，偷偷养",fx:{remorse:1},good:true},
+    {text:"跟爸妈商量",fx:{},good:true},
+    {text:"不养",fx:{},good:false},
+  ]},
+  {id:"c7",phase:"child",age:[9,11],text:"你被老师叫到办公室训话。",choices:[
+    {text:"承认错误",fx:{zhili:1},good:true},
+    {text:"狡辩",fx:{yanzhi:1,zhili:-1},good:false},
+    {text:"不说话",fx:{},good:false},
+  ]},
+  {id:"c8",phase:"child",age:[10,12],text:"家里经济紧张，爸妈不让你买新书包了。",choices:[
+    {text:"用旧的",fx:{jiajing:1,zhili:1},good:true},
+    {text:"偷偷攒钱买",fx:{jiajing:-1},good:false},
+    {text:"跟同学借",fx:{yanzhi:-1},good:false},
+  ]},
+  {id:"c9",phase:"child",age:[10,12],text:"你第一次看星星，觉得世界很大。",choices:[
+    {text:"许愿",fx:{yanzhi:1},good:true},
+    {text:"问爸妈星星是什么",fx:{zhili:2},good:true},
+    {text:"没感觉",fx:{},good:false},
+  ]},
+  {id:"c10",phase:"child",age:[11,12],text:"你要上小学高年级了，班主任要换。",choices:[
+    {text:"喜欢新老师",fx:{zhili:1},good:true},
+    {text:"不喜欢，成绩下滑",fx:{zhili:-1},good:false},
+  ]},
+
+  // ===== 少年 (13-18) =====
+  {id:"s1",phase:"teen",age:[13,14],text:"初中开学，你分到新班。",choices:[
+    {text:"主动交朋友",fx:{yanzhi:1},good:true},
+    {text:"自己坐角落",fx:{yanzhi:-1},good:false},
+    {text:"找以前的同学",fx:{},good:true},
+  ]},
+  {id:"s2",phase:"teen",age:[13,15],text:"第一次来月经/遗精，你不知道怎么回事。",choices:[
+    {text:"问爸妈",fx:{zhili:1,tizhi:1},good:true},
+    {text:"偷偷查书",fx:{zhili:1},good:true},
+    {text:"不问，自己慌",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"s3",phase:"teen",age:[14,16],text:"同学拉你逃课去网吧。",choices:[
+    {text:"去",fx:{zhili:-2,yanzhi:1},good:false},
+    {text:"不去，但怼他",fx:{yanzhi:-1},good:true},
+    {text:"不去，也不说话",fx:{},good:true},
+  ]},
+  {id:"s4",phase:"teen",age:[15,17],text:"初恋了，对方比你小/大。",choices:[
+    {text:"认真谈",fx:{yanzhi:1},good:true},
+    {text:"玩玩而已",fx:{remorse:1},good:false},
+    {text:"没敢表白",fx:{remorse:1},good:false},
+  ]},
+  {id:"s5",phase:"teen",age:[16,18],text:"中考成绩出来了。",choices:[
+    {text:"上了重点高中",fx:{zhili:2},good:true},
+    {text:"上了普通高中",fx:{},good:false},
+    {text:"去学技术/打工",fx:{jiajing:-1,zhili:-1},good:false},
+  ]},
+  {id:"s6",phase:"teen",age:[16,17],text:"你被校霸堵了，要交保护费。",choices:[
+    {text:"给",fx:{jiajing:-1},good:false},
+    {text:"反抗",fx:{tizhi:1,yanzhi:-1},good:true},
+    {text:"告诉老师",fx:{zhili:1},good:true},
+  ]},
+  {id:"s7",phase:"teen",age:[17,18],text:"高考前一个月，你焦虑到失眠。",choices:[
+    {text:"吃安眠药",fx:{tizhi:-2},good:false},
+    {text:"跑步解压",fx:{tizhi:2},good:true},
+    {text:"硬扛",fx:{tizhi:-1,zhili:-1},good:false},
+  ]},
+  {id:"s8",phase:"teen",age:[18,18],text:"高考结束了。",choices:[
+    {text:"考上了大学",fx:{zhili:2},good:true},
+    {text:"复读一年",fx:{zhili:1},good:true},
+    {text:"没考上，直接工作",fx:{jiajing:-1},good:false},
+  ]},
+  {id:"s9",phase:"teen",age:[13,15],text:"爸妈离婚了，你妈走了。",choices:[
+    {text:"跟爸爸",fx:{zhili:1,remorse:1},good:false},
+    {text:"跟妈妈",fx:{yanzhi:1,remorse:1},good:false},
+    {text:"自己住校",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"s10",phase:"teen",age:[14,16],text:"你交了一群狐朋狗友。",choices:[
+    {text:"跟着混",fx:{zhili:-2,yanzhi:1},good:false},
+    {text:"慢慢疏远",fx:{zhili:1},good:true},
+    {text:"其中有一个成了挚友",fx:{yanzhi:1},good:true},
+  ]},
+
+  // ===== 青年 (19-35) =====
+  {id:"y1",phase:"young",age:[19,20],text:"大学开学，你到了新城市。",choices:[
+    {text:"加入社团",fx:{yanzhi:1},good:true},
+    {text:"图书馆泡着",fx:{zhili:2},good:true},
+    {text:"宿舍打游戏",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"y2",phase:"young",age:[20,22],text:"期末考，你有一科要挂。",choices:[
+    {text:"熬夜补",fx:{zhili:1,tizhi:-1},good:true},
+    {text:"找学长要答案",fx:{remorse:1},good:false},
+    {text:"放弃了",fx:{zhili:-1},good:false},
+  ]},
+  {id:"y3",phase:"young",age:[22,23],text:"毕业季，你收到了三个 offer。",choices:[
+    {text:"大厂，加班多",fx:{jiajing:2,tizhi:-1},good:true},
+    {text:"小公司，轻松",fx:{jiajing:1},good:true},
+    {text:"考公",fx:{zhili:1},good:true},
+  ]},
+  {id:"y4",phase:"young",age:[23,25],text:"第一份工作，你被领导骂了。",choices:[
+    {text:"忍了",fx:{jiajing:1,zhili:-1},good:false},
+    {text:"怼回去",fx:{yanzhi:1,jiajing:-1},good:false},
+    {text:"辞职",fx:{jiajing:-1},good:false},
+  ]},
+  {id:"y5",phase:"young",age:[24,26],text:"你开始交女朋友/男朋友了。",choices:[
+    {text:"认真",fx:{yanzhi:1},good:true},
+    {text:"玩玩",fx:{remorse:1},good:false},
+    {text:"没对象，单着",fx:{},good:false},
+  ]},
+  {id:"y6",phase:"young",age:[25,28],text:"买房还是租房？",choices:[
+    {text:"咬牙买房",fx:{jiajing:-2,remorse:1},good:false},
+    {text:"租房",fx:{jiajing:1},good:true},
+    {text:"等，继续攒",fx:{jiajing:1},good:true},
+  ]},
+  {id:"y7",phase:"young",age:[26,30],text:"公司给你升职但要求加班到 11 点。",choices:[
+    {text:"接受",fx:{jiajing:2,tizhi:-2},good:true},
+    {text:"拒绝",fx:{jiajing:0,tizhi:1,zhili:1},good:true},
+    {text:"接受但偷偷摸鱼",fx:{jiajing:1,remorse:1},good:false},
+  ]},
+  {id:"y8",phase:"young",age:[28,32],text:"你要结婚了。",choices:[
+    {text:"结婚，要孩子",fx:{jiajing:-1,remorse:1},good:true},
+    {text:"结婚，丁克",fx:{yanzhi:1},good:true},
+    {text:"不结，单着",fx:{remorse:1},good:false},
+  ]},
+  {id:"y9",phase:"young",age:[28,35],text:"创业机会来了，朋友拉你入伙。",choices:[
+    {text:"投 20 万",fx:{jiajing:-3,remorse:1},good:true},
+    {text:"不投，但帮忙",fx:{jiajing:0,yanzhi:1},good:true},
+    {text:"不去",fx:{},good:false},
+  ]},
+  {id:"y10",phase:"young",age:[30,35],text:"35 岁危机，你被裁员了。",choices:[
+    {text:"找工作",fx:{jiajing:-1},good:false},
+    {text:"自己干",fx:{jiajing:-2,remorse:1},good:true},
+    {text:"回家躺平半年",fx:{tizhi:1,jiajing:-2},good:false},
+  ]},
+  {id:"y11",phase:"young",age:[22,25],text:"大学里你谈了一场恋爱。",choices:[
+    {text:"走到结婚",fx:{yanzhi:1},good:true},
+    {text:"毕业就分了",fx:{remorse:1},good:false},
+    {text:"没谈成",fx:{},good:false},
+  ]},
+  {id:"y12",phase:"young",age:[30,35],text:"你的父母开始催你二胎。",choices:[
+    {text:"生了",fx:{jiajing:-2,remorse:1},good:true},
+    {text:"不生，被念叨",fx:{remorse:1},good:false},
+    {text:"生了，但后悔",fx:{remorse:2},good:false},
+  ]},
+
+  // ===== 中年 (36-60) =====
+  {id:"m1",phase:"middle",age:[36,40],text:"你 36 了，公司开始优化。",choices:[
+    {text:"卷",fx:{jiajing:1,tizhi:-2},good:true},
+    {text:"躺",fx:{tizhi:1,jiajing:-1},good:false},
+    {text:"跳槽",fx:{jiajing:1,remorse:1},good:true},
+  ]},
+  {id:"m2",phase:"middle",age:[38,45],text:"体检报告出来了，有几项指标异常。",choices:[
+    {text:"注意养生",fx:{tizhi:2},good:true},
+    {text:"没当回事",fx:{tizhi:-2},good:false},
+    {text:"直接住院",fx:{jiajing:-3,tizhi:1},good:true},
+  ]},
+  {id:"m3",phase:"middle",age:[40,50],text:"你父亲住院了，需要陪床。",choices:[
+    {text:"请保姆，自己继续工作",fx:{jiajing:-1,yanzhi:-1},good:false},
+    {text:"请假陪床",fx:{yanzhi:2,jiajing:-1},good:true},
+    {text:"让哥哥请假",fx:{yanzhi:1,jiajing:0},good:true},
+  ]},
+  {id:"m4",phase:"middle",age:[42,50],text:"你老婆/老公出轨了。",choices:[
+    {text:"原谅",fx:{remorse:2},good:false},
+    {text:"离婚",fx:{jiajing:-2,remorse:1},good:false},
+    {text:"冷战中",fx:{yanzhi:-1},good:false},
+  ]},
+  {id:"m5",phase:"middle",age:[45,55],text:"你孩子要高考了，你开始焦虑。",choices:[
+    {text:"报很多补习班",fx:{jiajing:-2,remorse:1},good:false},
+    {text:"随缘",fx:{},good:true},
+    {text:"替孩子焦虑到失眠",fx:{tizhi:-1,remorse:1},good:false},
+  ]},
+  {id:"m6",phase:"middle",age:[50,55],text:'你 50 了，开始被叫"老X"。',choices:[
+    {text:"接受",fx:{},good:true},
+    {text:"不服，继续卷",fx:{tizhi:-2,jiajing:1},good:false},
+    {text:"退休",fx:{jiajing:-1,tizhi:1},good:true},
+  ]},
+  {id:"m7",phase:"middle",age:[50,60],text:"你的父母都过世了。",choices:[
+    {text:"送终",fx:{remorse:-1},good:true},
+    {text:"没来得及",fx:{remorse:2},good:false},
+  ]},
+  {id:"m8",phase:"middle",age:[45,55],text:"你投了一笔钱，亏了。",choices:[
+    {text:"割肉",fx:{jiajing:-2},good:false},
+    {text:"装死",fx:{jiajing:-1,remorse:1},good:false},
+    {text:"补仓，赚了",fx:{jiajing:2},good:true},
+  ]},
+  {id:"m9",phase:"middle",age:[55,60],text:"你要退休了，最后一班岗。",choices:[
+    {text:"好好干完",fx:{yanzhi:1},good:true},
+    {text:"摸鱼到点",fx:{},good:false},
+    {text:"提前走人",fx:{jiajing:-1},good:false},
+  ]},
+  {id:"m10",phase:"middle",age:[40,50],text:"你发现自己更年期来了。",choices:[
+    {text:"看医生",fx:{tizhi:1},good:true},
+    {text:"硬扛",fx:{tizhi:-2},good:false},
+    {text:"旅游散心",fx:{jiajing:-1,tizhi:1},good:true},
+  ]},
+
+  // ===== 老年 (61-80) =====
+  {id:"o1",phase:"old",age:[61,65],text:"你退休了，每天早上不知道干什么。",choices:[
+    {text:"跳广场舞",fx:{tizhi:1},good:true},
+    {text:"带孙子",fx:{jiajing:-1,remorse:1},good:true},
+    {text:"睡到自然醒",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"o2",phase:"old",age:[65,70],text:"你的老同学聚会，有人先走了。",choices:[
+    {text:"没见到最后一面",fx:{remorse:2},good:false},
+    {text:"见到了，抱了一下",fx:{remorse:-1},good:true},
+    {text:"没去",fx:{remorse:1},good:false},
+  ]},
+  {id:"o3",phase:"old",age:[70,75],text:"你的身体开始不行了。",choices:[
+    {text:"去医院",fx:{tizhi:1,jiajing:-2},good:true},
+    {text:"在家扛着",fx:{tizhi:-3},good:false},
+    {text:"叫孩子来照顾",fx:{yanzhi:1,jiajing:-1},good:true},
+  ]},
+  {id:"o4",phase:"old",age:[75,80],text:"你开始写回忆录。",choices:[
+    {text:"写给孩子",fx:{remorse:-2},good:true},
+    {text:"写给外人",fx:{},good:true},
+    {text:"不写了",fx:{remorse:1},good:false},
+  ]},
+  {id:"o5",phase:"old",age:[75,80],text:"你的老伴走了。",choices:[
+    {text:"一个人过了最后一段",fx:{remorse:2},good:false},
+    {text:"孩子陪着你",fx:{remorse:-1},good:true},
+  ]},
+  {id:"o6",phase:"old",age:[60,70],text:"你开始忘事，钥匙又找不到了。",choices:[
+    {text:"去检查",fx:{tizhi:1},good:true},
+    {text:"没当回事",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"o7",phase:"old",age:[70,78],text:"你孙子出生了，你帮忙带。",choices:[
+    {text:"带得开心",fx:{remorse:-1},good:true},
+    {text:"带得累",fx:{tizhi:-2,remorse:1},good:false},
+    {text:"没带，在老家",fx:{remorse:1},good:false},
+  ]},
+
+  // ===== 全局事件（任何阶段） =====
+  {id:"g1",phase:"all",text:"一场地震，你所在的城市震了一下。",choices:[
+    {text:"没事，继续过",fx:{},good:true},
+    {text:"家被震裂了",fx:{jiajing:-2,remorse:1},good:false},
+    {text:"救了个邻居",fx:{yanzhi:2,tizhi:1},good:true},
+  ]},
+  {id:"g2",phase:"all",text:"你中了 500 块彩票。",choices:[
+    {text:"请朋友吃饭",fx:{yanzhi:1,jiajing:0},good:true},
+    {text:"存着",fx:{jiajing:1},good:true},
+    {text:"又买了彩票",fx:{jiajing:-1,remorse:1},good:false},
+  ]},
+  {id:"g3",phase:"all",text:"你生了一场大病。",choices:[
+    {text:"治好了",fx:{tizhi:-1,jiajing:-2},good:true},
+    {text:"没治好，后遗症",fx:{tizhi:-3},good:false},
+    {text:"拖成了慢性病",fx:{tizhi:-2,remorse:1},good:false},
+  ]},
+  {id:"g4",phase:"all",text:"一个陌生人帮你忙了。",choices:[
+    {text:"记在心里",fx:{yanzhi:1},good:true},
+    {text:"没注意",fx:{},good:false},
+  ]},
+  {id:"g5",phase:"all",text:"你做了个梦，梦见已故的人。",choices:[
+    {text:"醒了，哭了",fx:{remorse:1},good:false},
+    {text:"醒了，释然了",fx:{remorse:-1},good:true},
+  ]},
+  {id:"g6",phase:"all",text:"你的房子被偷了/丢了东西。",choices:[
+    {text:"报保险，赔了",fx:{jiajing:0},good:true},
+    {text:"没保，自认倒霉",fx:{jiajing:-1,remorse:1},good:false},
+  ]},
+  {id:"g7",phase:"all",text:"你遇到一个改变你想法的人。",choices:[
+    {text:"听了",fx:{zhili:1},good:true},
+    {text:"没听，后悔了",fx:{remorse:1},good:false},
+  ]},
+  {id:"g8",phase:"all",text:"你养了一只狗/猫，它老死了。",choices:[
+    {text:"哭了很久",fx:{remorse:1},good:false},
+    {text:"埋了，又养了一只",fx:{},good:true},
+  ]},
+  {id:"g9",phase:"all",text:"你被冤枉了一次。",choices:[
+    {text:"解释了，信了",fx:{yanzhi:1},good:true},
+    {text:"没解释，背了锅",fx:{remorse:1},good:false},
+    {text:"翻案了",fx:{zhili:2},good:true},
+  ]},
+  {id:"g10",phase:"all",text:"你第一次坐飞机。",choices:[
+    {text:"紧张，吐了",fx:{tizhi:-1},good:false},
+    {text:"平静，看了风景",fx:{yanzhi:1},good:true},
+    {text:"没坐过",fx:{},good:false},
+  ]},
+
+  // ===== 童年补充 =====
+  {id:"c11",phase:"child",age:[2,4],text:"你第一次发烧，烧到 39 度。",choices:[
+    {text:"乖乖吃药",fx:{tizhi:1},good:true},
+    {text:"吐了药",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"c12",phase:"child",age:[4,6],text:"你在公园捡到一枚硬币。",choices:[
+    {text:"给妈妈",fx:{yanzhi:1},good:true},
+    {text:"买糖了",fx:{},good:false},
+    {text:"扔了",fx:{},good:false},
+  ]},
+  {id:"c13",phase:"child",age:[5,7],text:"你学会了骑自行车。",choices:[
+    {text:"摔了 10 次才学会",fx:{tizhi:1},good:true},
+    {text:"一次就学会了",fx:{tizhi:2},good:true},
+    {text:"怕，不学",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"c14",phase:"child",age:[6,8],text:"你被同学叫了外号。",choices:[
+    {text:"回骂了",fx:{yanzhi:1,tizhi:1},good:false},
+    {text:"没理他",fx:{},good:true},
+    {text:"哭了",fx:{yanzhi:-1},good:false},
+  ]},
+  {id:"c15",phase:"child",age:[7,9],text:"你第一次看动画片，哭了。",choices:[
+    {text:"问为什么",fx:{zhili:2},good:true},
+    {text:"继续看",fx:{},good:true},
+    {text:"不看了",fx:{},good:false},
+  ]},
+  {id:"c16",phase:"child",age:[8,10],text:"你偷偷把钱攒起来想买玩具。",choices:[
+    {text:"买了",fx:{},good:true},
+    {text:"被发现了，没收了",fx:{jiajing:-1},good:false},
+    {text:"把钱捐了",fx:{yanzhi:1,zhili:1},good:true},
+  ]},
+  {id:"c17",phase:"child",age:[9,11],text:"你第一次被老师当众表扬。",choices:[
+    {text:"骄傲了",fx:{zhili:-1,yanzhi:1},good:false},
+    {text:"更努力了",fx:{zhili:2},good:true},
+    {text:"没感觉",fx:{},good:false},
+  ]},
+  {id:"c18",phase:"child",age:[10,12],text:"你的同桌要转学了。",choices:[
+    {text:"舍不得",fx:{remorse:1},good:true},
+    {text:"无所谓",fx:{},good:false},
+    {text:"送了礼物",fx:{yanzhi:1},good:true},
+  ]},
+  {id:"c19",phase:"child",age:[10,12],text:"你第一次看到雪。",choices:[
+    {text:"堆了个雪人",fx:{tizhi:1},good:true},
+    {text:"滑了一跤",fx:{tizhi:-1},good:false},
+    {text:"没出去看",fx:{},good:false},
+  ]},
+  {id:"c20",phase:"child",age:[11,12],text:"你要小升初了，爸妈开始焦虑。",choices:[
+    {text:"你考了第一",fx:{zhili:2},good:true},
+    {text:"你没考好，被骂了",fx:{zhili:-1,remorse:1},good:false},
+    {text:"没怎么管，随缘",fx:{},good:true},
+  ]},
+
+  // ===== 少年补充 =====
+  {id:"s11",phase:"teen",age:[13,15],text:"你第一次来月经/遗精，你慌了。",choices:[
+    {text:"跟好朋友说了",fx:{yanzhi:1},good:true},
+    {text:"自己查手机",fx:{zhili:1},good:true},
+    {text:"装没事",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"s12",phase:"teen",age:[14,16],text:"你被老师怀疑早恋了。",choices:[
+    {text:"承认了",fx:{remorse:1},good:false},
+    {text:"否认了，被叫家长",fx:{remorse:1},good:false},
+    {text:"澄清了，没事",fx:{},good:true},
+  ]},
+  {id:"s13",phase:"teen",age:[15,17],text:"你第一次打架了。",choices:[
+    {text:"打赢了",fx:{tizhi:1,yanzhi:-1},good:false},
+    {text:"打输了",fx:{tizhi:-1},good:false},
+    {text:"没打，跑了",fx:{},good:true},
+  ]},
+  {id:"s14",phase:"teen",age:[15,17],text:"你开始长痘了。",choices:[
+    {text:"遮，自卑",fx:{yanzhi:-1},good:false},
+    {text:"不管，习惯了",fx:{},good:true},
+    {text:"涂药，好了",fx:{yanzhi:1},good:true},
+  ]},
+  {id:"s15",phase:"teen",age:[16,18],text:"你第一次一个人坐火车。",choices:[
+    {text:"没挤错车",fx:{zhili:1},good:true},
+    {text:"挤错了，耽误了",fx:{zhili:-1},good:false},
+    {text:"父母送站了",fx:{},good:true},
+  ]},
+  {id:"s16",phase:"teen",age:[16,18],text:"你交了第一个朋友，但你们吵架了。",choices:[
+    {text:"和好了",fx:{yanzhi:1},good:true},
+    {text:"绝交了",fx:{remorse:1},good:false},
+    {text:"冷战中",fx:{},good:false},
+  ]},
+  {id:"s17",phase:"teen",age:[17,18],text:"你第一次考砸了，成绩跌到谷底。",choices:[
+    {text:"努力补回来",fx:{zhili:2},good:true},
+    {text:"放弃了",fx:{zhili:-2},good:false},
+    {text:"躺平了",fx:{tizhi:1,zhili:-1},good:false},
+  ]},
+  {id:"s18",phase:"teen",age:[13,15],text:"你爸妈开始吵架，越来越频繁。",choices:[
+    {text:"劝和了",fx:{yanzhi:1},good:true},
+    {text:"不管了",fx:{remorse:1},good:false},
+    {text:"跟着一起吵",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"s19",phase:"teen",age:[14,16],text:"你第一次偷拿了家里 100 块。",choices:[
+    {text:"还回去了",fx:{remorse:-1},good:true},
+    {text:"被发现了，挨打",fx:{tizhi:-1,remorse:1},good:false},
+    {text:"没被发现",fx:{remorse:1},good:false},
+  ]},
+  {id:"s20",phase:"teen",age:[17,18],text:"你第一次写了一首诗/文章。",choices:[
+    {text:"投了校刊，上了",fx:{zhili:1},good:true},
+    {text:"没投，自己看了",fx:{},good:true},
+    {text:"删了",fx:{remorse:1},good:false},
+  ]},
+
+  // ===== 青年补充 =====
+  {id:"y13",phase:"young",age:[19,21],text:"你在大学第一次失恋了。",choices:[
+    {text:"喝醉了",fx:{tizhi:-1,remorse:1},good:false},
+    {text:"跑了一圈",fx:{tizhi:1},good:true},
+    {text:"没感觉",fx:{},good:false},
+  ]},
+  {id:"y14",phase:"young",age:[20,23],text:"你第一次坐高铁出差/旅行。",choices:[
+    {text:"看了风景",fx:{yanzhi:1},good:true},
+    {text:"睡了全程",fx:{tizhi:1},good:true},
+    {text:"晕车了",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"y15",phase:"young",age:[22,25],text:"你第一次发工资了。",choices:[
+    {text:"给父母买了礼物",fx:{yanzhi:1},good:true},
+    {text:"全花了",fx:{jiajing:-1},good:false},
+    {text:"存了一部分",fx:{jiajing:1},good:true},
+  ]},
+  {id:"y16",phase:"young",age:[23,28],text:"你第一次一个人搬家。",choices:[
+    {text:"搬完累瘫了",fx:{tizhi:1},good:true},
+    {text:"请了人",fx:{jiajing:-1},good:true},
+    {text:"东西丢了",fx:{jiajing:-1,remorse:1},good:false},
+  ]},
+  {id:"y17",phase:"young",age:[24,30],text:"你第一次被领导 PUA 了。",choices:[
+    {text:"忍了",fx:{tizhi:-1,jiajing:1},good:false},
+    {text:"怼了",fx:{yanzhi:1,jiajing:-1},good:false},
+    {text:"辞职了",fx:{jiajing:-1,remorse:1},good:true},
+  ]},
+  {id:"y18",phase:"young",age:[25,32],text:"你第一次去国外旅行。",choices:[
+    {text:"开了眼界",fx:{zhili:1,yanzhi:1},good:true},
+    {text:"被坑了",fx:{jiajing:-1},good:false},
+    {text:"语言不通，全程比划",fx:{},good:false},
+  ]},
+  {id:"y19",phase:"young",age:[28,35],text:"你第一次当爸/妈了。",choices:[
+    {text:"崩溃了",fx:{tizhi:-1,remorse:1},good:false},
+    {text:"适应了",fx:{tizhi:1},good:true},
+    {text:"让老人带",fx:{remorse:1},good:false},
+  ]},
+  {id:"y20",phase:"young",age:[30,35],text:"你第一次体检发现有结节。",choices:[
+    {text:"定期复查",fx:{tizhi:1},good:true},
+    {text:"没当回事",fx:{tizhi:-2},good:false},
+    {text:"手术切了",fx:{jiajing:-2,tizhi:1},good:true},
+  ]},
+  {id:"y21",phase:"young",age:[22,28],text:"你第一次养宠物。",choices:[
+    {text:"养了，很快乐",fx:{yanzhi:1,tizhi:1},good:true},
+    {text:"没照顾好，走了",fx:{remorse:2},good:false},
+    {text:"没养",fx:{},good:false},
+  ]},
+  {id:"y22",phase:"young",age:[30,35],text:"你第一次创业失败了。",choices:[
+    {text:"赔了 50 万",fx:{jiajing:-3,remorse:1},good:false},
+    {text:"小亏，没伤筋动骨",fx:{jiajing:-1},good:true},
+    {text:"没启动，躲过了",fx:{},good:true},
+  ]},
+
+  // ===== 中年补充 =====
+  {id:"m11",phase:"middle",age:[36,42],text:"你的孩子第一次叫爸/妈了。",choices:[
+    {text:"哭了",fx:{remorse:-1},good:true},
+    {text:"拍了视频",fx:{yanzhi:1},good:true},
+    {text:"没注意",fx:{remorse:1},good:false},
+  ]},
+  {id:"m12",phase:"middle",age:[40,48],text:"你第一次带父母去旅行。",choices:[
+    {text:"他们很开心",fx:{yanzhi:1},good:true},
+    {text:"他们嫌贵",fx:{jiajing:-1},good:false},
+    {text:"没去成",fx:{remorse:1},good:false},
+  ]},
+  {id:"m13",phase:"middle",age:[42,50],text:"你的事业到了瓶颈期。",choices:[
+    {text:"突破瓶颈了",fx:{jiajing:2,zhili:1},good:true},
+    {text:"卡住了",fx:{jiajing:-1,remorse:1},good:false},
+    {text:"换了赛道",fx:{jiajing:1},good:true},
+  ]},
+  {id:"m14",phase:"middle",age:[45,55],text:"你第一次发现自己老了。",choices:[
+    {text:"接受了",fx:{tizhi:1},good:true},
+    {text:"抗拒，染发",fx:{yanzhi:1,jiajing:-1},good:false},
+    {text:"没感觉",fx:{},good:false},
+  ]},
+  {id:"m15",phase:"middle",age:[50,58],text:"你第一次住院了。",choices:[
+    {text:"住院一周",fx:{tizhi:-2,jiajing:-1},good:false},
+    {text:"住院一个月",fx:{tizhi:-3,jiajing:-2},good:false},
+    {text:"虚惊一场",fx:{tizhi:1},good:true},
+  ]},
+  {id:"m16",phase:"middle",age:[48,58],text:"你的孩子第一次跟你顶嘴了。",choices:[
+    {text:"打了一顿",fx:{remorse:1},good:false},
+    {text:"没打，谈了",fx:{yanzhi:1},good:true},
+    {text:"冷战中",fx:{remorse:1},good:false},
+  ]},
+  {id:"m17",phase:"middle",age:[55,62],text:"你第一次坐地铁晕了。",choices:[
+    {text:"被扶住了",fx:{tizhi:1},good:true},
+    {text:"吐了",fx:{tizhi:-1},good:false},
+    {text:"没晕",fx:{},good:true},
+  ]},
+  {id:"m18",phase:"middle",age:[40,50],text:"你第一次给父母过生日。",choices:[
+    {text:"做了蛋糕",fx:{yanzhi:1},good:true},
+    {text:"买了礼物",fx:{jiajing:-1},good:true},
+    {text:"没记起来",fx:{remorse:2},good:false},
+  ]},
+  {id:"m19",phase:"middle",age:[50,58],text:'你第一次被孩子叫"老X"。',choices:[
+    {text:"没理",fx:{},good:true},
+    {text:"怼回去了",fx:{yanzhi:-1},good:false},
+    {text:"哭了",fx:{remorse:1},good:false},
+  ]},
+  {id:"m20",phase:"middle",age:[45,55],text:"你第一次体检发现有指标超标。",choices:[
+    {text:"注意饮食了",fx:{tizhi:1},good:true},
+    {text:"没注意",fx:{tizhi:-2},good:false},
+    {text:"住院了",fx:{jiajing:-2,tizhi:-1},good:false},
+  ]},
+
+  // ===== 老年补充 =====
+  {id:"o8",phase:"old",age:[61,68],text:"你第一次跳广场舞了。",choices:[
+    {text:"跳得不错",fx:{tizhi:1,yanzhi:1},good:true},
+    {text:"跟不上节奏",fx:{tizhi:-1},good:false},
+    {text:"站旁边看",fx:{},good:false},
+  ]},
+  {id:"o9",phase:"old",age:[65,72],text:"你第一次被孙子叫爷爷/奶奶了。",choices:[
+    {text:"开心坏了",fx:{remorse:-1},good:true},
+    {text:"没当回事",fx:{},good:false},
+    {text:"哭了",fx:{remorse:-1},good:true},
+  ]},
+  {id:"o10",phase:"old",age:[68,75],text:"你第一次发现自己听不清了。",choices:[
+    {text:"配了助听器",fx:{tizhi:1,jiajing:-1},good:true},
+    {text:"没配，凑合",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"o11",phase:"old",age:[70,78],text:"你第一次住养老院了。",choices:[
+    {text:"适应了",fx:{tizhi:1},good:true},
+    {text:"不适应，想家",fx:{tizhi:-1,remorse:1},good:false},
+    {text:"没住，在家",fx:{remorse:1},good:false},
+  ]},
+  {id:"o12",phase:"old",age:[72,80],text:"你第一次写遗书了。",choices:[
+    {text:"写了，没给谁",fx:{remorse:-1},good:true},
+    {text:"写了，给了孩子",fx:{remorse:-2},good:true},
+    {text:"没写",fx:{remorse:1},good:false},
+  ]},
+  {id:"o13",phase:"old",age:[60,70],text:"你第一次用智能手机了。",choices:[
+    {text:"学会了",fx:{zhili:1},good:true},
+    {text:"没学会",fx:{},good:false},
+    {text:"让孙子教了",fx:{yanzhi:1},good:true},
+  ]},
+  {id:"o14",phase:"old",age:[70,78],text:"你第一次看自己的老照片。",choices:[
+    {text:"笑了",fx:{remorse:-1},good:true},
+    {text:"哭了",fx:{remorse:1},good:false},
+    {text:"没感觉",fx:{},good:false},
+  ]},
+  {id:"o15",phase:"old",age:[65,75],text:"你的老邻居搬走了。",choices:[
+    {text:"去送了",fx:{remorse:-1},good:true},
+    {text:"没送",fx:{remorse:1},good:false},
+    {text:"搬走了，联系了",fx:{},good:true},
+  ]},
+
+  // ===== 全局补充 =====
+  {id:"g11",phase:"all",text:"你第一次被狗追了。",choices:[
+    {text:"跑了",fx:{tizhi:1},good:true},
+    {text:"没跑掉，被咬了",fx:{tizhi:-2,jiajing:-1},good:false},
+    {text:"狗跑了",fx:{},good:true},
+  ]},
+  {id:"g12",phase:"all",text:"你第一次看到流星了。",choices:[
+    {text:"许愿了",fx:{remorse:-1},good:true},
+    {text:"没注意",fx:{},good:false},
+    {text:"拍了照片",fx:{yanzhi:1},good:true},
+  ]},
+  {id:"g13",phase:"all",text:"你第一次在雨里走了。",choices:[
+    {text:"淋透了",fx:{tizhi:-1},good:false},
+    {text:"没淋透",fx:{},good:true},
+    {text:"跑进了店",fx:{},good:true},
+  ]},
+  {id:"g14",phase:"all",text:"你第一次看到别人去世了。",choices:[
+    {text:"哭了",fx:{remorse:1},good:true},
+    {text:"没哭",fx:{},good:true},
+    {text:"吓到了",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"g15",phase:"all",text:"你第一次帮陌生人指路了。",choices:[
+    {text:"他谢了",fx:{yanzhi:1},good:true},
+    {text:"他走了",fx:{},good:true},
+    {text:"他谢了，给了红包",fx:{jiajing:1},good:true},
+  ]},
+  {id:"g16",phase:"all",text:"你第一次在电梯里遇险了。",choices:[
+    {text:"没事",fx:{},good:true},
+    {text:"吓到了",fx:{tizhi:-1},good:false},
+    {text:"被困了",fx:{tizhi:-1,remorse:1},good:false},
+  ]},
+  {id:"g17",phase:"all",text:"你第一次闻到桂花香了。",choices:[
+    {text:"记了一辈子",fx:{remorse:-1},good:true},
+    {text:"没注意",fx:{},good:false},
+  ]},
+  {id:"g18",phase:"all",text:"你第一次看到日出了。",choices:[
+    {text:"值了",fx:{yanzhi:1,tizhi:1},good:true},
+    {text:"没起来",fx:{},good:false},
+  ]},
+  {id:"g19",phase:"all",text:"你第一次被雷吓到了。",choices:[
+    {text:"躲了",fx:{},good:true},
+    {text:"没躲",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"g20",phase:"all",text:"你第一次看到满汉全席/大餐了。",choices:[
+    {text:"记了一辈子",fx:{jiajing:1},good:true},
+    {text:"没吃，看了",fx:{},good:false},
+  ]},
+];
+
+// ========== 状态 ==========
+let state = {
+  mode: "custom",
+  selectedTalents: [],
+  randomTalentRefresh: null,
+  confirmedRandomTalents: false,
+  confirmedRandomAttrs: false,
+  attrs: {yanzhi:0, zhili:0, tizhi:0, jiajing:0},
+  attrPointsUsed: 0,
+  origin: null,
+  wealthLevel: null,
+  // 游戏状态
+  day: 0,
+  age: 0,
+  phase: "child",
+  phaseDay: 0,
+  nextEventIn: 0,
+  pendingEvent: null,
+  eventLog: [],
+  keyEvents: [],
+  remorse: 0,
+  gameOver: false,
+  deathDay: 0,
+  timer: null,
+  speed: 1000, // 1秒=1天
+};
+
+// ========== 初始化 ==========
+function init(){
+  try{ renderTalents(); }catch(e){ console.error("talent render:",e); }
+  try{ updatePointsInfo(); }catch(e){ console.error("points:",e); }
+  // 出身选项已写死在 HTML，无需 renderOrigins
+}
+
+function renderTalents(){
+  const grid = document.getElementById("talent-grid");
+  grid.innerHTML = TALENTS.map(t=>{
+    const rare = t.rare ? '<span style="color:var(--accent);font-size:11px">★</span>' : '';
+    return `<div class="talent-item" id="tal-${t.id}" onclick="toggleTalent('${t.id}')">
+      <div class="t-name">${rare} ${t.name}</div>
+      <div class="t-desc">${t.desc}</div>
+    </div>`;
+  }).join("");
+}
+
+function renderOrigins(){
+  const grid = document.getElementById("origin-grid");
+  grid.innerHTML = ORIGINS.map(o=>{
+    return `<div class="origin-item" id="origin-${o.id}" onclick="selectOrigin('${o.id}')">
+      <div class="o-name">${o.name}</div>
+      <div class="o-desc">${o.desc}</div>
+    </div>`;
+  }).join("");
+}
+
+function toggleTalent(id){
+  const idx = state.selectedTalents.indexOf(id);
+  if(idx>=0) state.selectedTalents.splice(idx,1);
+  else state.selectedTalents.push(id);
+  updateTalentUI();
+  updateStartBtn();
+}
+
+function updateTalentUI(){
+  TALENTS.forEach(t=>{
+    const el = document.getElementById("tal-"+t.id);
+    if(el) el.className = "talent-item" + (state.selectedTalents.includes(t.id)?" selected":"");
+  });
+  const info = document.getElementById("selected-talents-info");
+  info.textContent = state.selectedTalents.length>0 ? "已选 "+state.selectedTalents.length+" 个天赋" : "";
+  checkStartReady();
+}
+
+function selectOrigin(id){
+  document.querySelectorAll(".origin-item").forEach(e=>e.classList.remove("selected"));
+  document.getElementById("origin-"+id).classList.add("selected");
+  state.origin = ORIGINS.find(o=>o.id===id);
+  updateWealthPreview();
+  checkStartReady();
+}
+
+function updateWealthPreview(){
+  const el = document.getElementById("wealth-preview");
+  if(state.origin){
+    const jl = state.attrs.jiajing;
+    let level;
+    if(jl>=10) level = "巨富";
+    else if(jl>=8) level = "富裕";
+    else if(jl>=5) level = "小康";
+    else if(jl>=3) level = "温饱";
+    else level = "贫穷";
+    const wl = WEALTH_LEVELS.find(w=>w.name===level);
+    el.style.display = "block";
+    el.innerHTML = `家境等级：<span>${level}</span> · 年收入参考：<span>${wl?wl.income:"?"}</span> · 出生地：<span>${state.origin.name}</span>`;
+  } else {
+    el.style.display = "none";
+  }
+}
+
+// ========== 模式切换 ==========
+function switchMode(mode){
+  state.mode = mode;
+  document.querySelectorAll(".mode-tab").forEach(t=>{
+    t.classList.toggle("active", t.dataset.mode===mode);
+  });
+  document.getElementById("talent-custom").style.display = mode==="custom"?"block":"none";
+  document.getElementById("talent-random").style.display = mode==="random"?"block":"none";
+  document.getElementById("attr-custom").style.display = mode==="custom"?"block":"none";
+  document.getElementById("attr-random").style.display = mode==="random"?"block":"none";
+  document.getElementById("points-info").style.display = mode==="custom"?"block":"none";
+  if(mode==="random"){
+    state.confirmedRandomTalents = false;
+    state.confirmedRandomAttrs = false;
+    document.getElementById("btn-confirm-talents").disabled = true;
+    document.getElementById("btn-confirm-attrs").disabled = true;
+  }
+  checkStartReady();
+}
+
+function refreshRandomTalents(){
+  const poolSize = TALENTS.length;
+  const count = Math.round(poolSize * (0.3 + Math.random()*0.2));
+  const shuffled = [...TALENTS].sort(()=>Math.random()-0.5);
+  state.randomTalentRefresh = shuffled.slice(0,count);
+  document.getElementById("rd-count").textContent = count;
+  const items = document.getElementById("rd-items");
+  items.innerHTML = state.randomTalentRefresh.map(t=>{
+    const cls = t.rare ? "rd-item rd-good" : "rd-item";
+    return `<span class="${cls}">${t.name}</span>`;
+  }).join("");
+  document.getElementById("btn-confirm-talents").disabled = false;
+}
+
+function confirmRandomTalents(){
+  if(!state.randomTalentRefresh) return;
+  state.selectedTalents = state.randomTalentRefresh.map(t=>t.id);
+  state.confirmedRandomTalents = true;
+  updateTalentUI();
+  document.getElementById("btn-confirm-talents").disabled = true;
+  checkStartReady();
+}
+
+function rollRandomAttrs(){
+  const total = Math.floor(Math.random()*41); // 0~40
+  const keys = ["yanzhi","zhili","tizhi","jiajing"];
+  const vals = [0,0,0,0];
+  let remaining = total;
+  for(let i=0;i<total;i++){
+    const free = keys.filter((_,idx)=>vals[idx]<10);
+    if(free.length===0) break;
+    const pick = free[Math.floor(Math.random()*free.length)];
+    vals[keys.indexOf(pick)]++;
+  }
+  state.attrs = {yanzhi:vals[0],zhili:vals[1],tizhi:vals[2],jiajing:vals[3]};
+  document.getElementById("ra-items").innerHTML =
+    `<span class="rd-item">颜值 ${vals[0]}</span>`+
+    `<span class="rd-item">智力 ${vals[1]}</span>`+
+    `<span class="rd-item">体质 ${vals[2]}</span>`+
+    `<span class="rd-item">家境 ${vals[3]}</span>`+
+    `<span class="rd-item" style="color:var(--accent)">共 ${total} 点</span>`;
+  document.getElementById("btn-confirm-attrs").disabled = false;
+}
+
+function confirmRandomAttrs(){
+  state.confirmedRandomAttrs = true;
+  document.getElementById("btn-confirm-attrs").disabled = true;
+  // 显示到UI
+  document.getElementById("val-yanzhi").textContent = state.attrs.yanzhi;
+  document.getElementById("val-zhili").textContent = state.attrs.zhili;
+  document.getElementById("val-tizhi").textContent = state.attrs.tizhi;
+  document.getElementById("val-jiajing").textContent = state.attrs.jiajing;
+  checkStartReady();
+}
+
+// ========== 加点（定制模式） ==========
+function changeAttr(key,delta){
+  const max = 10;
+  const newVal = state.attrs[key]+delta;
+  if(delta>0 && newVal>max) return;
+  if(delta<0 && newVal<0) return;
+  // 检查点数
+  if(delta>0 && state.attrPointsUsed>=20) return;
+  if(delta>0) state.attrPointsUsed++;
+  if(delta<0) state.attrPointsUsed--;
+  state.attrs[key] = newVal;
+  document.getElementById("val-"+key).textContent = newVal;
+  updatePointsInfo();
+  updateWealthPreview();
+  checkStartReady();
+}
+
+function updatePointsInfo(){
+  const left = 20-state.attrPointsUsed;
+  document.getElementById("points-left").textContent = left;
+}
+
+function checkStartReady(){
+  const btn = document.getElementById("btn-start");
+  let ready = false;
+  if(state.mode==="custom"){
+    ready = state.origin!==null;
+  } else {
+    ready = state.confirmedRandomTalents && state.confirmedRandomAttrs && state.origin!==null;
+  }
+  btn.disabled = !ready;
+  btn.textContent = ready ? "开始人生" : "选择完出身再开始";
+}
+
+function updateStartBtn(){checkStartReady()}
+
+// ========== 开始游戏 ==========
+function startGame(){
+  // 应用天赋效果到四维
+  state.selectedTalents.forEach(tid=>{
+    const t = TALENTS.find(x=>x.id===tid);
+    if(t&&t.fx){
+      Object.keys(t.fx).forEach(k=>{
+        state.attrs[k] = Math.max(0,Math.min(10, state.attrs[k]+t.fx[k]));
+      });
+    }
+  });
+  // 显示最终四维
+  document.getElementById("val-yanzhi").textContent = state.attrs.yanzhi;
+  document.getElementById("val-zhili").textContent = state.attrs.zhili;
+  document.getElementById("val-tizhi").textContent = state.attrs.tizhi;
+  document.getElementById("val-jiajing").textContent = state.attrs.jiajing;
+  document.getElementById("gb-yanzhi").textContent = state.attrs.yanzhi;
+  document.getElementById("gb-zhili").textContent = state.attrs.zhili;
+  document.getElementById("gb-tizhi").textContent = state.attrs.tizhi;
+  document.getElementById("gb-jiajing").textContent = state.attrs.jiajing;
+
+  // 出生
+  state.day = 0;
+  state.age = 0;
+  state.phase = "child";
+  state.phaseDay = 0;
+  state.nextEventIn = 3; // 3天后第一个事件
+  state.remorse = 0;
+  state.eventLog = [];
+  state.keyEvents = [];
+  state.gameOver = false;
+
+  document.getElementById("panel-start").classList.remove("active");
+  document.getElementById("panel-game").classList.add("active");
+
+  addEventLog("🍼 你出生了。",`出身：${state.origin?state.origin.name:"随机"} · 家境 ${state.attrs.jiajing} · 颜值 ${state.attrs.yanzhi} · 智力 ${state.attrs.zhili} · 体质 ${state.attrs.tizhi}`);
+  state.keyEvents.push({age:0,text:"你出生了。"});
+
+  startTimer();
+}
+
+function startTimer(){
+  if(state.timer) clearInterval(state.timer);
+  state.timer = setInterval(tick, state.speed);
+}
+
+function tick(){
+  if(state.gameOver) return;
+  state.day++;
+  state.age = Math.floor(state.day/365);
+  state.phaseDay++;
+  state.nextEventIn--;
+
+  // 更新UI
+  document.getElementById("g-age").textContent = state.age+" 岁 "+(state.day%365)+" 天";
+  document.getElementById("g-day").textContent = "第 "+state.day+" 天";
+  document.getElementById("t-num").textContent = Math.max(0,state.nextEventIn);
+
+  // 阶段转换
+  const oldPhase = state.phase;
+  if(state.age>=61) state.phase="old";
+  else if(state.age>=36) state.phase="middle";
+  else if(state.age>=19) state.phase="young";
+  else if(state.age>=13) state.phase="teen";
+  else state.phase="child";
+  if(state.phase!==oldPhase){
+    state.phaseDay = 0;
+    const names = {child:"童年",teen:"少年",young:"青年",middle:"中年",old:"老年"};
+    addEventLog("—— "+names[state.phase]+"期 ——","",true);
+  }
+  document.getElementById("g-phase").textContent = {child:"童年",teen:"少年",young:"青年",middle:"中年",old:"老年"}[state.phase];
+
+  // 触发事件
+  if(state.nextEventIn<=0){
+    triggerEvent();
+  }
+
+  // 自然衰老：80岁后加速
+  if(state.age>=80){
+    const chance = (state.age-75)*0.006 + (10-state.attrs.tizhi)*0.002;
+    if(Math.random()<chance){
+      die();
+      return;
+    }
+  }
+  // 体质0 且年龄>10
+  if(state.attrs.tizhi<=0 && state.age>10 && Math.random()<0.01){
+    die();
+    return;
+  }
+}
+
+function triggerEvent(){
+  // 选择事件：优先当前阶段，其次全局
+  let pool = EVENTS.filter(e=>e.phase===state.phase);
+  if(pool.length===0) pool = EVENTS.filter(e=>e.phase==="all");
+  if(pool.length===0) pool = EVENTS;
+
+  // 避免重复
+  let available = pool.filter(e=>!state.eventLog.find(l=>l.eventId===e.id));
+  const event = (available.length>0?available:pool)[Math.floor(Math.random()*(available.length>0?available.length:pool.length))];
+  if(!event) return;
+
+  state.pendingEvent = event;
+  state.nextEventIn = 0;
+
+  // 显示选择
+  const box = document.getElementById("event-choice");
+  box.style.display = "block";
+  box.innerHTML = `<div class="choice-box">
+    <div class="c-title">[${state.age} 岁] ${event.text}</div>
+    ${event.choices.map((c,i)=>`<button class="choice-btn" onclick="chooseOption(${i})">${String.fromCharCode(65+i)}. ${c.text}</button>`).join("")}
+  </div>`;
+
+  addEventLog(`[${state.age} 岁] ${event.text}`);
+  document.getElementById("event-log").scrollTop = document.getElementById("event-log").scrollHeight;
+
+  // 停止时间
+  if(state.timer) clearInterval(state.timer);
+  state.timer = null;
+}
+
+function chooseOption(idx){
+  const event = state.pendingEvent;
+  const choice = event.choices[idx];
+  const fx = choice.fx || {};
+
+  // 应用效果
+  let effects = [];
+  if(fx.yanzhi !== 0 && fx.yanzhi !== undefined){
+    state.attrs.yanzhi = Math.max(0,Math.min(10,state.attrs.yanzhi+fx.yanzhi));
+    effects.push("颜值"+(fx.yanzhi>0?"+":"")+fx.yanzhi);
+  }
+  if(fx.zhili !== 0 && fx.zhili !== undefined){
+    state.attrs.zhili = Math.max(0,Math.min(10,state.attrs.zhili+fx.zhili));
+    effects.push("智力"+(fx.zhili>0?"+":"")+fx.zhili);
+  }
+  if(fx.tizhi !== 0 && fx.tizhi !== undefined){
+    state.attrs.tizhi = Math.max(0,Math.min(10,state.attrs.tizhi+fx.tizhi));
+    effects.push("体质"+(fx.tizhi>0?"+":"")+fx.tizhi);
+  }
+  if(fx.jiajing !== 0 && fx.jiajing !== undefined){
+    state.attrs.jiajing = Math.max(0,Math.min(10,state.attrs.jiajing+fx.jiajing));
+    effects.push("家境"+(fx.jiajing>0?"+":"")+fx.jiajing);
+  }
+  if(fx.remorse !== 0 && fx.remorse !== undefined){
+    state.remorse = Math.max(0,state.remorse+fx.remorse);
+    effects.push("遗憾"+(fx.remorse>0?"+":"")+fx.remorse);
+  }
+
+  // 更新UI
+  document.getElementById("gb-yanzhi").textContent = state.attrs.yanzhi;
+  document.getElementById("gb-zhili").textContent = state.attrs.zhili;
+  document.getElementById("gb-tizhi").textContent = state.attrs.tizhi;
+  document.getElementById("gb-jiajing").textContent = state.attrs.jiajing;
+
+  // 记录
+  state.eventLog.push({age:state.age,text:event.text,choice:choice.text,eventId:event.id});
+  state.keyEvents.push({age:state.age,text:`${event.text} 你选了：${choice.text}`});
+
+  addEventLog(`你选了：${choice.text}`, effects.join(" · "), choice.good===false);
+
+  // 清除选择
+  document.getElementById("event-choice").style.display = "none";
+  state.pendingEvent = null;
+
+  // 计算下一个事件间隔
+  let interval;
+  switch(state.phase){
+    case "child": interval = 2+Math.floor(Math.random()*3); break; // 2~4天
+    case "teen": interval = 2+Math.floor(Math.random()*2); break; // 2~3天
+    case "young": interval = 3+Math.floor(Math.random()*5); break; // 3~7天
+    case "middle": interval = 5+Math.floor(Math.random()*6); break; // 5~10天
+    case "old": interval = 7+Math.floor(Math.random()*9); break; // 7~15天
+    default: interval = 5;
+  }
+  state.nextEventIn = interval;
+
+  // 检查是否该死了
+  checkDeath();
+
+  // 恢复时间
+  startTimer();
+}
+
+function addEventLog(text, effects, bad){
+  const log = document.getElementById("event-log");
+  const div = document.createElement("div");
+  div.className = "event-entry";
+  let html = `<div class="e-age">${state.age} 岁</div>`;
+  html += `<div class="e-text ${bad?"e-bad":""}">${text}</div>`;
+  if(effects) html += `<div class="e-effect ${bad?"e-bad":""}">${effects}</div>`;
+  div.innerHTML = html;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function checkDeath(){
+  // 体质0 且年龄>10
+  if(state.attrs.tizhi<=0 && state.age>10){
+    die();
+    return;
+  }
+  // 自然寿命：体质越高活越久
+  // 基础75岁 + 体质*1.5（最高90）+ 随机0~5
+  const maxAge = 75 + state.attrs.tizhi*1.5 + Math.floor(Math.random()*6);
+  if(state.age >= maxAge && Math.random() < 0.3){
+    die();
+    return;
+  }
+  // 80岁后每年加速衰老
+  if(state.age >= 80){
+    const chance = (state.age-75)*0.06 + (10-state.attrs.tizhi)*0.02;
+    if(Math.random() < chance){
+      die();
+    }
+  }
+}
+
+function die(){
+  state.gameOver = true;
+  if(state.timer) clearInterval(state.timer);
+  state.timer = null;
+  state.deathDay = state.day;
+  showDeathReport();
+}
+
+// ========== 死亡结算 ==========
+function showDeathReport(){
+  const panel = document.getElementById("death-panel");
+  panel.style.display = "block";
+  document.getElementById("event-choice").style.display = "none";
+
+  const age = state.age;
+  const a = state.attrs;
+
+  // 人生标签
+  function tagText(val,name){
+    if(name==="yanzhi"){
+      if(val>=8) return "长得挺好看，就是没用";
+      if(val>=5) return "普通长相，但活得体面";
+      if(val>=3) return "长相一般，不影响吃饭";
+      return "长得磕碜，但心不坏";
+    }
+    if(name==="zhili"){
+      if(val>=8) return "一辈子都在想为什么";
+      if(val>=5) return "脑子够用，没浪费";
+      if(val>=3) return "普通智商，活得踏实";
+      return "一辈子没想过为什么";
+    }
+    if(name==="tizhi"){
+      if(val>=8) return "活到最后，身体比儿子还好";
+      if(val>=5) return "身体还行，没少生病";
+      if(val>=3) return "老毛病一堆，但没倒下";
+      return "身体垮得早，但撑到了现在";
+    }
+    if(name==="jiajing"){
+      if(val>=8) return "富了一辈子，没缺过钱";
+      if(val>=5) return "小康一生，有房贷但还行";
+      if(val>=3) return "温饱，饿不着";
+      return "穷了一辈子，但没欠别人钱";
+    }
+  }
+
+  const tags = [
+    `<div class="dr-tag"><span class="dt-key">颜值 ${a.yanzhi}</span><span class="dt-val">${tagText(a.yanzhi,"yanzhi")}</span></div>`,
+    `<div class="dr-tag"><span class="dt-key">智力 ${a.zhili}</span><span class="dt-val">${tagText(a.zhili,"zhili")}</span></div>`,
+    `<div class="dr-tag"><span class="dt-key">体质 ${a.tizhi}</span><span class="dt-val">${tagText(a.tizhi,"tizhi")}</span></div>`,
+    `<div class="dr-tag"><span class="dt-key">家境 ${a.jiajing}</span><span class="dt-val">${tagText(a.jiajing,"jiajing")}</span></div>`,
+  ];
+
+  // 人生回顾（随机挑3~5个）
+  const recalls = state.keyEvents.sort(()=>Math.random()-0.5).slice(0,Math.min(5,state.keyEvents.length));
+  const recallHtml = recalls.map(r=>`<div class="dr-recall-item">${r.age} 岁那年，${r.text}</div>`).join("");
+
+  // 遗憾
+  const remorseText = state.remorse>0 ? `你一共欠了 ${state.remorse} 件事，没说出口的话，没来得及的告别。` : "没什么遗憾，挺好的。";
+
+  // 彴约评分（0~100）
+  const attrScore = a.yanzhi*0.5 + a.zhili*1.5 + a.tizhi*1.0 + a.jiajing*0.5; // 0~40
+  const ageScore = Math.min(age,80)/80*30; // 0~30
+  const remorseScore = state.remorse===0 ? 20 : Math.max(0, 20-state.remorse*4); // 0~20
+  const eventScore = Math.min(state.eventLog.length,20)*0.5; // 0~10
+  const score = Math.min(100, Math.round(attrScore + ageScore + remorseScore + eventScore));
+
+  panel.innerHTML = `
+    <div class="death-report">
+      <div style="font-size:14px;color:var(--dim)">彴约 · 流星划过</div>
+      <div class="dr-age">享年 ${age} 岁</div>
+      <div class="dr-tags">${tags.join("")}</div>
+      <div class="dr-recall">${recallHtml}</div>
+      <div class="dr-remorse">${remorseText}</div>
+      <div class="dr-score">${score}</div>
+      <div class="dr-score-label">彴约评分 · 短暂，但灿烂</div>
+      <button class="btn btn-primary" style="margin-top:20px" onclick="restart()">再活一次</button>
+    </div>
+  `;
+
+  document.getElementById("event-log").scrollTop = document.getElementById("event-log").scrollHeight;
+}
+
+function restart(){
+  clearInterval(state.timer);
+  state = {
+    mode:"custom", selectedTalents:[], randomTalentRefresh:null,
+    confirmedRandomTalents:false, confirmedRandomAttrs:false,
+    attrs:{yanzhi:0,zhili:0,tizhi:0,jiajing:0}, attrPointsUsed:0,
+    origin:null, wealthLevel:null, day:0, age:0, phase:"child",
+    phaseDay:0, nextEventIn:0, pendingEvent:null, eventLog:[],
+    keyEvents:[], remorse:0, gameOver:false, deathDay:0, timer:null, speed:1000,
+  };
+  document.getElementById("death-panel").style.display = "none";
+  document.getElementById("event-log").innerHTML = "";
+  document.getElementById("event-choice").style.display = "none";
+  document.getElementById("panel-game").classList.remove("active");
+  document.getElementById("panel-start").classList.add("active");
+  document.querySelectorAll(".origin-item").forEach(e=>e.classList.remove("selected"));
+  document.getElementById("wealth-preview").style.display = "none";
+  document.getElementById("val-yanzhi").textContent = "0";
+  document.getElementById("val-zhili").textContent = "0";
+  document.getElementById("val-tizhi").textContent = "0";
+  document.getElementById("val-jiajing").textContent = "0";
+  document.getElementById("rd-items").innerHTML = '<span style="color:var(--dim);font-size:13px">尚未刷新</span>';
+  document.getElementById("ra-items").innerHTML = '<span style="color:var(--dim);font-size:13px">尚未分配</span>';
+  document.getElementById("btn-confirm-talents").disabled = true;
+  document.getElementById("btn-confirm-attrs").disabled = true;
+  document.getElementById("selected-talents-info").textContent = "";
+  document.querySelectorAll(".talent-item").forEach(e=>e.classList.remove("selected"));
+  document.getElementById("points-left").textContent = "20";
+  checkStartReady();
+  switchMode("custom");
+}
+
+init();
+</script>
+</body>
+</html>
