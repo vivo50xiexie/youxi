@@ -287,6 +287,17 @@ h1{font-size:22px;color:var(--accent);text-align:center;margin-bottom:4px}
 </div>
 
 <script>
+// 全局错误显示：脚本若中途报错，把信息贴到页面上，避免"全页按钮失灵"
+window.addEventListener("error", function(e){
+  let box = document.getElementById("error-overlay");
+  if(!box){
+    box = document.createElement("div");
+    box.id = "error-overlay";
+    box.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:9999;max-width:90vw;max-height:40vh;overflow:auto;background:#2a0d0d;border:1px solid #e05252;color:#ffb4b4;font-size:11px;padding:8px;border-radius:6px;font-family:monospace;white-space:pre-wrap";
+    document.body.appendChild(box);
+  }
+  box.textContent = "⚠ JS 错误：\n" + (e.message||"未知") + "\n" + (e.filename||"") + ":" + (e.lineno||"");
+});
 // ========== 天赋池（36个） ==========
 const TALENTS = [
   // 基础四维
@@ -1371,10 +1382,10 @@ function clearAuto(){
   if(state.autoTimer){ clearTimeout(state.autoTimer); state.autoTimer=null; }
 }
 
-function setSpeed(){
-  state.speed = ;
+function setSpeed(s){
+  state.speed = s;
   ["sp1","sp2","sp4"].forEach(id=>document.getElementById(id).classList.remove("btn-primary"));
-  document.getElementById("sp"+).classList.add("btn-primary");
+  document.getElementById("sp"+s).classList.add("btn-primary");
   // 若正在自动播放，重排下一次
   if(state.autoPlay && !state.gameOver) scheduleAuto();
 }
