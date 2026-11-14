@@ -354,6 +354,10 @@ const WEALTH_LEVELS = [
 // ========== 事件卡（152张） ==========
 const EVENTS = [
   // ===== 童年 (0-12) =====
+  {id:"c0g",phase:"child",age:[0,0],text:"你出生了，是个？",gender:true,choices:[
+    {text:"是个男孩",fx:{gender:"male"},good:true},
+    {text:"是个女孩",fx:{gender:"female"},good:true},
+  ]},
   {id:"c0a",phase:"child",age:[0,1],text:"你哇哇坠地，第一声哭出了声。",choices:[
     {text:"哭声嘹亮，体质+1",fx:{tizhi:1},good:true},
     {text:"安安静静，没怎么哭",fx:{tizhi:-1},good:false},
@@ -438,7 +442,7 @@ const EVENTS = [
     {text:"玩玩而已",fx:{remorse:1},good:false},
     {text:"没敢表白",fx:{remorse:1},good:false},
   ]},
-  {id:"s5",phase:"teen",age:[16,18],text:"中考成绩出来了。",choices:[
+  {id:"s5",phase:"teen",age:[15,15],text:"中考成绩出来了，你升高中。",choices:[
     {text:"上了重点高中",fx:{zhili:2},good:true},
     {text:"上了普通高中",fx:{},good:false},
     {text:"去学技术/打工",fx:{jiajing:-1,zhili:-1},good:false},
@@ -448,7 +452,7 @@ const EVENTS = [
     {text:"反抗",fx:{tizhi:1,yanzhi:-1},good:true},
     {text:"告诉老师",fx:{zhili:1},good:true},
   ]},
-  {id:"s7",phase:"teen",age:[17,18],text:"高考前一个月，你焦虑到失眠。",choices:[
+  {id:"s7",phase:"teen",age:[18,18],text:"高考前一个月，你焦虑到失眠。",choices:[
     {text:"吃安眠药",fx:{tizhi:-2},good:false},
     {text:"跑步解压",fx:{tizhi:2},good:true},
     {text:"硬扛",fx:{tizhi:-1,zhili:-1},good:false},
@@ -1034,7 +1038,39 @@ function updateTalentUI(){
   });
   const info = document.getElementById("selected-talents-info");
   info.textContent = state.selectedTalents.length>0 ? "已选 "+state.selectedTalents.length+" 个天赋" : "";
+  previewAttrs();
   checkStartReady();
+}
+
+// 把"手动点数 + 天赋加成"写回 state.attrs（开始游戏前调用）
+function commitAttrs(){
+  const base = {yanzhi:0,zhili:0,tizhi:0,jiajing:0};
+  ["yanzhi","zhili","tizhi","jiajing"].forEach(k=>base[k]=state.attrs[k]||0);
+  state.selectedTalents.forEach(tid=>{
+    const t = TALENTS.find(x=>x.id===tid);
+    if(t&&t.fx) Object.keys(t.fx).forEach(k=>{
+      if(base[k]!==undefined) base[k] = Math.max(0,Math.min(10,base[k]+t.fx[k]));
+    });
+  });
+  state.attrs = base;
+}
+
+// 让菜单四维实时 = 手动点数 + 已勾天赋的加成（与进游戏后初始值一致）
+function previewAttrs(){
+  const base = {yanzhi:0,zhili:0,tizhi:0,jiajing:0};
+  // 手动分配的点（定制模式）
+  ["yanzhi","zhili","tizhi","jiajing"].forEach(k=>base[k]=state.attrs[k]||0);
+  // 加上已选天赋的加成
+  state.selectedTalents.forEach(tid=>{
+    const t = TALENTS.find(x=>x.id===tid);
+    if(t&&t.fx) Object.keys(t.fx).forEach(k=>{
+      if(base[k]!==undefined) base[k] = Math.max(0,Math.min(10,base[k]+t.fx[k]));
+    });
+  });
+  ["yanzhi","zhili","tizhi","jiajing"].forEach(k=>{
+    const el=document.getElementById("val-"+k);
+    if(el) el.textContent = base[k];
+  });
 }
 
 function selectOrigin(id){
@@ -1183,15 +1219,8 @@ function updateStartBtn(){checkStartReady()}
 
 // ========== 开始游戏 ==========
 function startGame(){
-  // 应用天赋效果到四维
-  state.selectedTalents.forEach(tid=>{
-    const t = TALENTS.find(x=>x.id===tid);
-    if(t&&t.fx){
-      Object.keys(t.fx).forEach(k=>{
-        state.attrs[k] = Math.max(0,Math.min(10, state.attrs[k]+t.fx[k]));
-      });
-    }
-  });
+  // 把"手动点数 + 天赋加成"写回 state.attrs，再进游戏（保证菜单与游戏一致）
+  commitAttrs();
   // 显示最终四维
   document.getElementById("val-yanzhi").textContent = state.attrs.yanzhi;
   document.getElementById("val-zhili").textContent = state.attrs.zhili;
@@ -1213,6 +1242,8 @@ function startGame(){
   state.gameOver = false;
   state.autoPlay = false;
   state.fastForward = false;
+  state.gender = null;          // 出生第一个事件决定
+  state.firstEventDone = false;
 
   document.getElementById("panel-start").classList.remove("active");
   document.getElementById("panel-game").classList.add("active");
@@ -1223,8 +1254,8 @@ function startGame(){
   document.getElementById("btn-next").disabled = false;
   document.getElementById("btn-skip").disabled = false;
 
-  addEventLog("🍼 你出生了。",`出身：${state.origin?state.origin.name:"随机"} · 家境 ${state.attrs.jiajing} · 颜值 ${state.attrs.yanzhi} · 智力 ${state.attrs.zhili} · 体质 ${state.attrs.tizhi}`);
-  state.keyEvents.push({age:0,text:"你出生了。"});
+  addEventLog(`出身：${state.origin?state.origin.name:"随机"} · 家境 ${state.attrs.jiajing} · 颜值 ${state.attrs.yanzhi} · 智力 ${state.attrs.zhili} · 体质 ${state.attrs.tizhi}`);
+
   updateGameUI();
   // 默认手动：点"⏭ 下一个"推进 1 年并出 1 个事件
 }
@@ -1271,6 +1302,23 @@ function pickEvent(){
 // 主推进：前进时间 → 出事件 → （自动或手动选择）
 function nextEvent(){
   if(state.gameOver) return;
+
+  // 第一次：固定出"性别"事件（c0g），随机 50% 男 / 50% 女
+  if(!state.firstEventDone){
+    state.firstEventDone = true;
+    const gEvent = EVENTS.find(e=>e.id==="c0g");
+    state.age = 0;
+    state.pendingEvent = gEvent;
+    addEventLog("🍼 你出生了。");
+    // 直接随机决定性别并记录，不暂停
+    const choice = gEvent.choices[Math.floor(Math.random()*2)];
+    applyChoice(choice, gEvent);
+    state.gender = choice.fx.gender;
+    addEventLog(state.gender==="male" ? "👦 你是男孩。" : "👧 你是女孩。", "", false);
+    updateGameUI();
+    return;
+  }
+
   advanceTime();
   const event = pickEvent();
   if(!event){ updateGameUI(); return; }
@@ -1339,12 +1387,10 @@ function clamp0_10(v){ return Math.max(0,Math.min(10,v)); }
 function scheduleAuto(){
   if(state.gameOver || !state.autoPlay) return;
   clearAuto();
-  // 一个事件的基础间隔 1.2 秒，按 speed 缩放；老年/幼年稍慢
-  const baseMs = state.age>=60 ? 2000 : state.age<6 ? 800 : 1200;
-  const delay = baseMs / state.speed;
+  // 固定 1 秒出 1 个事件
   state.autoTimer = setTimeout(()=>{
     nextEvent();
-  }, delay);
+  }, 1000);
 }
 
 function toggleAuto(){
