@@ -271,9 +271,16 @@ h1{font-size:22px;color:var(--accent);text-align:center;margin-bottom:4px}
     <div class="attr-mini"><div class="am-label">体质</div><div class="am-val" id="gb-tizhi">0</div></div>
     <div class="attr-mini"><div class="am-label">家境</div><div class="am-val" id="gb-jiajing">0</div></div>
   </div>
-  <button class="btn btn-primary" id="btn-next" onclick="nextEvent()" style="margin:10px 0">
-    ▶ 下一个事件
-  </button>
+  <div style="display:flex;gap:8px;margin:10px 0;align-items:center;flex-wrap:wrap">
+    <button class="btn btn-small btn-primary" id="btn-play" onclick="toggleAuto()">▶ 自动播放</button>
+    <button class="btn btn-small" id="btn-next" onclick="nextEvent()">⏭ 下一个</button>
+    <button class="btn btn-small" id="btn-skip" onclick="skipToOld()">⏩ 快进到老年</button>
+    <div style="display:flex;gap:4px;margin-left:auto">
+      <button class="btn btn-small" onclick="setSpeed(1)" id="sp1">1×</button>
+      <button class="btn btn-small" onclick="setSpeed(2)" id="sp2">2×</button>
+      <button class="btn btn-small" onclick="setSpeed(4)" id="sp4">4×</button>
+    </div>
+  </div>
   <div class="event-log" id="event-log"></div>
   <div id="event-choice" style="display:none"></div>
   <div id="death-panel" style="display:none"></div>
@@ -338,9 +345,21 @@ const WEALTH_LEVELS = [
   {id:"super",name:"巨富",desc:"企业主/富二代",range:[10,10],income:">50万"},
 ];
 
-// ========== 事件卡（150张） ==========
+// ========== 事件卡（152张） ==========
 const EVENTS = [
   // ===== 童年 (0-12) =====
+  {id:"c0a",phase:"child",age:[0,1],text:"你哇哇坠地，第一声哭出了声。",choices:[
+    {text:"哭声嘹亮，体质+1",fx:{tizhi:1},good:true},
+    {text:"安安静静，没怎么哭",fx:{tizhi:-1},good:false},
+  ]},
+  {id:"c0b",phase:"child",age:[0,1],text:"爸妈给你起了个名字。",choices:[
+    {text:"寓意好，长辈喜欢",fx:{yanzhi:1},good:true},
+    {text:"名字太大众，后来改名",fx:{remorse:1},good:false},
+  ]},
+  {id:"c0c",phase:"child",age:[0,1],text:"你第一次被人抱起来。",choices:[
+    {text:"被抱得稳稳的",fx:{tizhi:1},good:true},
+    {text:"被晃了一下，吓哭了",fx:{tizhi:-1},good:false},
+  ]},
   {id:"c1",phase:"child",age:[2,4],text:"你第一次走路，摔了一跤。",choices:[
     {text:"哭，等大人来扶",fx:{tizhi:-1},good:true},
     {text:"自己爬起来",fx:{zhili:1},good:true},
@@ -952,6 +971,10 @@ let state = {
   age: 0,
   phase: "child",
 
+  autoPlay: false,
+  speed: 1,
+  autoTimer: null,
+
   pendingEvent: null,
   eventLog: [],
   keyEvents: [],
@@ -1185,92 +1208,185 @@ function startGame(){
 
   document.getElementById("panel-start").classList.remove("active");
   document.getElementById("panel-game").classList.add("active");
+  // 重置控制按钮
+  document.getElementById("event-choice").style.display = "none";
+  document.getElementById("btn-play").textContent = "▶ 自动播放";
+  document.getElementById("btn-play").classList.remove("btn-primary");
   document.getElementById("btn-next").disabled = false;
+  document.getElementById("btn-skip").disabled = false;
+  ["sp1","sp2","sp4"].forEach(id=>document.getElementById(id).classList.remove("btn-primary"));
+  document.getElementById("sp1").classList.add("btn-primary");
 
   addEventLog("🍼 你出生了。",`出身：${state.origin?state.origin.name:"随机"} · 家境 ${state.attrs.jiajing} · 颜值 ${state.attrs.yanzhi} · 智力 ${state.attrs.zhili} · 体质 ${state.attrs.tizhi}`);
   state.keyEvents.push({age:0,text:"你出生了。"});
   updateGameUI();
+  // 出生默认开始自动播放
+  toggleAuto();
 }
 
-// 手动驱动：点一次"下一个事件"，时间前进到下一个有事件的时刻，然后出事件
-function nextEvent(){
-  if(state.gameOver) return;
+// ===== 人生重开式：随机间隔 + 自动播放 + 自动/手动选择 =====
 
-  // 当前年龄没有合适事件（如婴儿 0~1 岁）→ 直接长大到"下一个有事件的年龄"
-  if(!hasEventForAge(state.age)){
-    let target = state.age;
-    while(target<100 && !hasEventForAge(target)) target++;
-    state.month = 0;
-    state.age = target;
-    addEventLog(`${state.age} 岁了`);
-    updateGameUI();
-    return;
-  }
+// 两个事件之间隔多少个月（带随机浮动）
+function monthsPerEvent(){
+  const a = state.age;
+  let base;
+  if(a < 6)  base = 6;    // 0~6 岁：半年
+  else if(a < 18) base = 3; // 6~18 岁：每 3 个月
+  else if(a < 60) base = 1; // 18~60 岁：每月
+  else base = 12;           // 60+：每年
+  // 随机浮动 ±50%
+  return Math.max(1, Math.round(base * (0.5 + Math.random())));
+}
 
-  // 有事件 → 前进 monthsPerEvent() 个月
-  state.month += monthsPerEvent();
+// 前进到下一个事件时刻
+function advanceTime(){
+  let months = monthsPerEvent();
+  state.month += months;
   while(state.month>=12 && state.age<99){ state.age++; state.month-=12; }
-
-  // 阶段转换提示
+  // 阶段转换
   const newPhase = state.age>=61?"old":state.age>=36?"middle":state.age>=19?"young":state.age>=13?"teen":"child";
   if(newPhase!==state.phase){
     const names={child:"童年",teen:"少年",young:"青年",middle:"中年",old:"老年"};
     addEventLog("—— "+names[newPhase]+"期 ——");
     state.phase=newPhase;
   }
-
-  updateGameUI();
-  triggerEvent();
 }
 
-// 当前年龄是否有可抽的事件
-function hasEventForAge(age){
-  const inAge=e=>!e.age||(age>=e.age[0]&&age<=e.age[1]);
-  if(age<6){
-    return EVENTS.some(e=>e.phase==="child"&&inAge(e)&&(!e.age||e.age[0]<=age));
-  }
-  const ph=age>=61?"old":age>=36?"middle":age>=19?"young":age>=13?"teen":"child";
-  return EVENTS.some(e=>e.phase===ph&&inAge(e)) || EVENTS.some(e=>e.phase==="all"&&inAge(e));
-}
-
-function triggerEvent(){
-  // 年龄过滤：事件若带 age 区间 [lo,hi]，只在当前年龄处于区间内时才可抽
-  const inAge = e => {
-    if(!e.age) return true;
-    return state.age>=e.age[0] && state.age<=e.age[1];
-  };
-
-  // 6 岁前：只出"当前年龄已达"的儿童事件（年龄上限≤当前年龄，或无年龄限制）
+// 抽一个当前年龄合适、没玩过的事件
+function pickEvent(){
+  const inAge = e => !e.age || (state.age>=e.age[0] && state.age<=e.age[1]);
+  let pool;
   if(state.age < 6){
-    let pool = EVENTS.filter(e=>e.phase==="child" && inAge(e) && (!e.age || e.age[0]<=state.age));
+    pool = EVENTS.filter(e=>e.phase==="child" && inAge(e) && (!e.age || e.age[0]<=state.age));
     if(pool.length===0) pool = EVENTS.filter(e=>e.phase==="child" && inAge(e));
-    if(pool.length===0) pool = EVENTS.filter(e=>e.phase==="child" && inAge(e) && (!e.age || e.age[0]<=state.age));
   } else {
-    // 6 岁后：正常按阶段 + 年龄过滤
-    let pool = EVENTS.filter(e=>e.phase===state.phase && inAge(e));
+    pool = EVENTS.filter(e=>e.phase===state.phase && inAge(e));
     if(pool.length===0) pool = EVENTS.filter(e=>inAge(e));
     if(pool.length===0) pool = EVENTS.filter(e=>e.phase==="all");
   }
+  if(!pool || pool.length===0) return null;
+  const seen = new Set(state.eventLog.map(l=>l.eventId));
+  const avail = pool.filter(e=>!seen.has(e.id));
+  const src = avail.length ? avail : pool;
+  return src[Math.floor(Math.random()*src.length)];
+}
 
-  if(!pool || pool.length===0) return;
-
-  // 避免重复
-  let available = pool.filter(e=>!state.eventLog.find(l=>l.eventId===e.id));
-  const event = (available.length>0?available:pool)[Math.floor(Math.random()*(available.length>0?available.length:pool.length))];
-  if(!event) return;
+// 主推进：前进时间 → 出事件 → （自动或手动选择）
+function nextEvent(){
+  if(state.gameOver) return;
+  advanceTime();
+  const event = pickEvent();
+  if(!event){ updateGameUI(); return; }
 
   state.pendingEvent = event;
+  addEventLog(`[${state.age} 岁] ${event.text}`);
 
-  // 显示选择
+  // 自动模式：直接随机选一个，不暂停
+  if(state.autoPlay){
+    autoChoose(event);
+  } else {
+    showChoices(event);
+  }
+  updateGameUI();
+}
+
+// 显示选项按钮（手动模式）
+function showChoices(event){
   const box = document.getElementById("event-choice");
   box.style.display = "block";
   box.innerHTML = `<div class="choice-box">
     <div class="c-title">[${state.age} 岁] ${event.text}</div>
     ${event.choices.map((c,i)=>`<button class="choice-btn" onclick="chooseOption(${i})">${String.fromCharCode(65+i)}. ${c.text}</button>`).join("")}
   </div>`;
-
-  addEventLog(`[${state.age} 岁] ${event.text}`);
   document.getElementById("event-log").scrollTop = document.getElementById("event-log").scrollHeight;
+}
+
+// 自动模式：随机选一个选项并记录
+function autoChoose(event){
+  const choice = event.choices[Math.floor(Math.random()*event.choices.length)];
+  applyChoice(choice, event);
+  scheduleAuto();
+}
+
+// 手动选择
+function chooseOption(idx){
+  const event = state.pendingEvent;
+  const choice = event.choices[idx];
+  document.getElementById("event-choice").style.display = "none";
+  applyChoice(choice, event);
+  checkDeath();
+  updateGameUI();
+}
+
+// 应用一个选项的效果（自动/手动共用）
+function applyChoice(choice, event){
+  const fx = choice.fx || {};
+  let effects = [];
+  if(fx.yanzhi){ state.attrs.yanzhi = clamp0_10(state.attrs.yanzhi+fx.yanzhi); effects.push("颜值"+fmt(fx.yanzhi)); }
+  if(fx.zhili){ state.attrs.zhili = clamp0_10(state.attrs.zhili+fx.zhili); effects.push("智力"+fmt(fx.zhili)); }
+  if(fx.tizhi){ state.attrs.tizhi = clamp0_10(state.attrs.tizhi+fx.tizhi); effects.push("体质"+fmt(fx.tizhi)); }
+  if(fx.jiajing){ state.attrs.jiajing = clamp0_10(state.attrs.jiajing+fx.jiajing); effects.push("家境"+fmt(fx.jiajing)); }
+  if(fx.remorse){ state.remorse = Math.max(0,state.remorse+fx.remorse); effects.push("遗憾"+fmt(fx.remorse)); }
+  state.eventLog.push({age:state.age,text:event.text,choice:choice.text,eventId:event.id});
+  state.keyEvents.push({age:state.age,text:`${event.text} 你选了：${choice.text}`});
+  addEventLog(`你选了：${choice.text}`, effects.join(" · "), choice.good===false);
+  state.pendingEvent = null;
+}
+
+function fmt(n){ return (n>0?"+":"")+n; }
+function clamp0_10(v){ return Math.max(0,Math.min(10,v)); }
+
+// ===== 自动播放循环（人生重开式"看小说"体验）=====
+// 每次推进一个事件后，按当前速度的"事件间隔毫秒"再触发下一次
+function scheduleAuto(){
+  if(state.gameOver || !state.autoPlay) return;
+  clearAuto();
+  // 一个事件的基础间隔 1.2 秒，按 speed 缩放；老年/幼年稍慢
+  const baseMs = state.age>=60 ? 2000 : state.age<6 ? 800 : 1200;
+  const delay = baseMs / state.speed;
+  state.autoTimer = setTimeout(()=>{
+    nextEvent();
+  }, delay);
+}
+
+function toggleAuto(){
+  state.autoPlay = !state.autoPlay;
+  const btn = document.getElementById("btn-play");
+  btn.textContent = state.autoPlay ? "⏸ 暂停" : "▶ 自动播放";
+  btn.classList.toggle("btn-primary", state.autoPlay);
+  if(state.autoPlay){
+    // 先清掉手动选项框
+    document.getElementById("event-choice").style.display = "none";
+    scheduleAuto();
+  } else {
+    clearAuto();
+  }
+}
+
+function clearAuto(){
+  if(state.autoTimer){ clearTimeout(state.autoTimer); state.autoTimer=null; }
+}
+
+function setSpeed(s){
+  state.speed = s;
+  ["sp1","sp2","sp4"].forEach(id=>document.getElementById(id).classList.remove("btn-primary"));
+  document.getElementById("sp"+s).classList.add("btn-primary");
+  // 若正在自动播放，重排下一次
+  if(state.autoPlay && !state.gameOver) scheduleAuto();
+}
+
+// 快进到老年（跳过中间阶段）
+function skipToOld(){
+  if(state.gameOver) return;
+  clearAuto();
+  state.autoPlay = false;
+  document.getElementById("btn-play").textContent = "▶ 自动播放";
+  document.getElementById("btn-play").classList.remove("btn-primary");
+  // 直接跳到 60 岁
+  state.age = 60; state.month = 0; state.phase = "old";
+  addEventLog("⏩ 快进到 60 岁（老年）");
+  updateGameUI();
+  nextEvent();
 }
 
 function chooseOption(idx){
@@ -1371,7 +1487,10 @@ function checkDeath(){
 function die(){
   state.gameOver = true;
   state.deathDay = state.month;
-  document.getElementById("btn-next").disabled = true;
+  clearAuto();
+  state.autoPlay = false;
+  document.getElementById("btn-play").textContent = "▶ 自动播放";
+  document.getElementById("btn-play").classList.remove("btn-primary");
   showDeathReport();
 }
 
@@ -1465,6 +1584,7 @@ function restart(){
     confirmedRandomTalents:false, confirmedRandomAttrs:false,
     attrs:{yanzhi:0,zhili:0,tizhi:0,jiajing:0}, attrPointsUsed:0,
     origin:null, wealthLevel:null, month:0, age:0, phase:"child",
+    autoPlay:false, speed:1, autoTimer:null,
     pendingEvent:null, eventLog:[],
     keyEvents:[], remorse:0, gameOver:false, deathDay:0,
   };
@@ -1472,6 +1592,11 @@ function restart(){
   document.getElementById("event-log").innerHTML = "";
   document.getElementById("event-choice").style.display = "none";
   document.getElementById("btn-next").disabled = false;
+  document.getElementById("btn-skip").disabled = false;
+  document.getElementById("btn-play").textContent = "▶ 自动播放";
+  document.getElementById("btn-play").classList.remove("btn-primary");
+  ["sp1","sp2","sp4"].forEach(id=>document.getElementById(id).classList.remove("btn-primary"));
+  document.getElementById("sp1").classList.add("btn-primary");
   document.getElementById("panel-game").classList.remove("active");
   document.getElementById("panel-start").classList.add("active");
   document.querySelectorAll(".origin-item").forEach(e=>e.classList.remove("selected"));
