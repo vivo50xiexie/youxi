@@ -272,14 +272,9 @@ h1{font-size:22px;color:var(--accent);text-align:center;margin-bottom:4px}
     <div class="attr-mini"><div class="am-label">家境</div><div class="am-val" id="gb-jiajing">0</div></div>
   </div>
   <div style="display:flex;gap:8px;margin:10px 0;align-items:center;flex-wrap:wrap">
-    <button class="btn btn-small btn-primary" id="btn-play" onclick="toggleAuto()">▶ 自动播放</button>
-    <button class="btn btn-small" id="btn-next" onclick="nextEvent()">⏭ 下一个</button>
-    <button class="btn btn-small" id="btn-skip" onclick="skipToOld()">⏩ 快进到老年</button>
-    <div style="display:flex;gap:4px;margin-left:auto">
-      <button class="btn btn-small" onclick="setSpeed(1)" id="sp1">1×</button>
-      <button class="btn btn-small" onclick="setSpeed(2)" id="sp2">2×</button>
-      <button class="btn btn-small" onclick="setSpeed(4)" id="sp4">4×</button>
-    </div>
+    <button class="btn btn-small btn-primary" id="btn-next" onclick="nextEvent()" style="flex:1">⏭ 下一年（出 1 个事件）</button>
+    <button class="btn btn-small" id="btn-play" onclick="toggleAuto()">▶ 自动</button>
+    <button class="btn btn-small" id="btn-skip" onclick="skipToOld()">⏩ 到老年</button>
   </div>
   <div class="event-log" id="event-log"></div>
   <div id="event-choice" style="display:none"></div>
@@ -1216,6 +1211,8 @@ function startGame(){
   state.eventLog = [];
   state.keyEvents = [];
   state.gameOver = false;
+  state.autoPlay = false;
+  state.fastForward = false;
 
   document.getElementById("panel-start").classList.remove("active");
   document.getElementById("panel-game").classList.add("active");
@@ -1225,39 +1222,24 @@ function startGame(){
   document.getElementById("btn-play").classList.remove("btn-primary");
   document.getElementById("btn-next").disabled = false;
   document.getElementById("btn-skip").disabled = false;
-  ["sp1","sp2","sp4"].forEach(id=>document.getElementById(id).classList.remove("btn-primary"));
-  document.getElementById("sp1").classList.add("btn-primary");
 
   addEventLog("🍼 你出生了。",`出身：${state.origin?state.origin.name:"随机"} · 家境 ${state.attrs.jiajing} · 颜值 ${state.attrs.yanzhi} · 智力 ${state.attrs.zhili} · 体质 ${state.attrs.tizhi}`);
   state.keyEvents.push({age:0,text:"你出生了。"});
   updateGameUI();
-  // 出生默认自动播放，并立即出第一个事件（避免 0 岁空池空转）
-  state.autoPlay = true;
-  document.getElementById("btn-play").textContent = "⏸ 暂停";
-  document.getElementById("btn-play").classList.add("btn-primary");
-  nextEvent();
-  scheduleAuto();
+  // 默认手动：点"⏭ 下一个"推进 1 年并出 1 个事件
 }
 
-// ===== 人生重开式：随机间隔 + 自动播放 + 自动/手动选择 =====
+// ===== 手动驱动：点一下 = 推进 1 年，这一年出 1 个事件 =====
 
-// 两个事件之间隔多少个月（带随机浮动）
-function monthsPerEvent(){
-  const a = state.age;
-  let base;
-  if(a < 6)  base = 6;    // 0~6 岁：半年
-  else if(a < 18) base = 3; // 6~18 岁：每 3 个月
-  else if(a < 60) base = 1; // 18~60 岁：每月
-  else base = 12;           // 60+：每年
-  // 随机浮动 ±50%
-  return Math.max(1, Math.round(base * (0.5 + Math.random())));
+// 点一次推进的"年数"：默认 1 年（可选快进）
+function yearsPerEvent(){
+  return state.fastForward ? 5 : 1;
 }
 
-// 前进到下一个事件时刻
+// 前进到下一个事件时刻（每次 1 年）
 function advanceTime(){
-  let months = monthsPerEvent();
-  state.month += months;
-  while(state.month>=12 && state.age<99){ state.age++; state.month-=12; }
+  const years = yearsPerEvent();
+  state.age += years;
   // 阶段转换
   const newPhase = state.age>=61?"old":state.age>=36?"middle":state.age>=19?"young":state.age>=13?"teen":"child";
   if(newPhase!==state.phase){
@@ -1296,10 +1278,11 @@ function nextEvent(){
   state.pendingEvent = event;
   addEventLog(`[${state.age} 岁] ${event.text}`);
 
-  // 自动模式：直接随机选一个，不暂停
+  // 自动模式：随机选 + 排下一次
   if(state.autoPlay){
     autoChoose(event);
   } else {
+    // 手动模式：弹出选项让玩家选（选完点"下一年"才继续）
     showChoices(event);
   }
   updateGameUI();
@@ -1455,16 +1438,6 @@ function chooseOption(idx){
   updateGameUI();
 }
 
-// 各年龄段"两个事件之间隔多少个月"
-// 0~6岁每半年 / 6~18岁每3个月 / 18~60岁每月 / 60+岁每年
-function monthsPerEvent(){
-  const a = state.age;
-  if(a < 6)  return 6;    // 0~6 岁：每 6 个月
-  if(a < 18) return 3;    // 6~18 岁：每 3 个月
-  if(a < 60) return 1;    // 18~60 岁：每 1 个月
-  return 12;             // 60+ 岁：每 12 个月
-}
-
 function addEventLog(text, effects, bad){
   const log = document.getElementById("event-log");
   const div = document.createElement("div");
@@ -1511,7 +1484,7 @@ function die(){
 
 function updateGameUI(){
   document.getElementById("g-age").textContent = state.age+" 岁";
-  document.getElementById("g-day").textContent = "第 "+state.month+" 月";
+  document.getElementById("g-day").textContent = "每点 1 年出 1 事";
   document.getElementById("g-phase").textContent = {child:"童年",teen:"少年",young:"青年",middle:"中年",old:"老年"}[state.phase];
   document.getElementById("gb-yanzhi").textContent = state.attrs.yanzhi;
   document.getElementById("gb-zhili").textContent = state.attrs.zhili;
@@ -1556,7 +1529,7 @@ function showDeathReport(){
     }
   }
 
-  const 标签 = [
+  const tags = [
     `<div class="dr-tag"><span class="dt-key">颜值 ${a.yanzhi}</span><span class="dt-val">${tagText(a.yanzhi,"yanzhi")}</span></div>`,
     `<div class="dr-tag"><span class="dt-key">智力 ${a.zhili}</span><span class="dt-val">${tagText(a.zhili,"zhili")}</span></div>`,
     `<div class="dr-tag"><span class="dt-key">体质 ${a.tizhi}</span><span class="dt-val">${tagText(a.tizhi,"tizhi")}</span></div>`,
@@ -1599,7 +1572,7 @@ function restart(){
     confirmedRandomTalents:false, confirmedRandomAttrs:false,
     attrs:{yanzhi:0,zhili:0,tizhi:0,jiajing:0}, attrPointsUsed:0,
     origin:null, wealthLevel:null, month:0, age:0, phase:"child",
-    autoPlay:false, speed:1, autoTimer:null,
+    autoPlay:false, speed:1, autoTimer:null, fastForward:false,
     pendingEvent:null, eventLog:[],
     keyEvents:[], remorse:0, gameOver:false, deathDay:0,
   };
@@ -1608,10 +1581,8 @@ function restart(){
   document.getElementById("event-choice").style.display = "none";
   document.getElementById("btn-next").disabled = false;
   document.getElementById("btn-skip").disabled = false;
-  document.getElementById("btn-play").textContent = "▶ 自动播放";
+  document.getElementById("btn-play").textContent = "▶ 自动";
   document.getElementById("btn-play").classList.remove("btn-primary");
-  ["sp1","sp2","sp4"].forEach(id=>document.getElementById(id).classList.remove("btn-primary"));
-  document.getElementById("sp1").classList.add("btn-primary");
   document.getElementById("panel-game").classList.remove("active");
   document.getElementById("panel-start").classList.add("active");
   document.querySelectorAll(".origin-item").forEach(e=>e.classList.remove("selected"));
