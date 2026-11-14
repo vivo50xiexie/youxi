@@ -1359,8 +1359,7 @@ function chooseOption(idx){
   const event = state.pendingEvent;
   const choice = event.choices[idx];
   document.getElementById("event-choice").style.display = "none";
-  applyChoice(choice, event);
-  checkDeath();
+  applyChoice(choice, event);  // 内部含 checkDeath
   updateGameUI();
 }
 
@@ -1377,6 +1376,8 @@ function applyChoice(choice, event){
   state.keyEvents.push({age:state.age,text:`${event.text} 你选了：${choice.text}`});
   addEventLog(`你选了：${choice.text}`, effects.join(" · "), choice.good===false);
   state.pendingEvent = null;
+  // 自动/手动共用：选完检查是否该死了
+  checkDeath();
 }
 
 function fmt(n){ return (n>0?"+":"")+n; }
