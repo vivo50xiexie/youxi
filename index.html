@@ -22,7 +22,7 @@ h1{font-size:22px;color:var(--accent);text-align:center;margin-bottom:4px}
 /* 按钮 */
 .btn{display:block;width:100%;padding:14px;margin:10px 0;background:var(--card);
   color:var(--fg);border:1px solid var(--border);border-radius:8px;
-  font-size:15px;cursor:pointer;transition:.2s;text-align:center}
+  font-size:15px;cursor:pointer;transition:.2;text-align:center}
 .btn:hover{background:var(--card2);border-color:var(--accent)}
 .btn:active{transform:scale(.98)}
 .btn-primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
@@ -31,7 +31,7 @@ h1{font-size:22px;color:var(--accent);text-align:center;margin-bottom:4px}
 /* 天赋选择 */
 .talent-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
 .talent-item{background:var(--card);border:1px solid var(--border);border-radius:6px;
-  padding:10px;cursor:pointer;transition:.15s;font-size:13px}
+  padding:10px;cursor:pointer;transition:.15;font-size:13px}
 .talent-item:hover{border-color:var(--accent)}
 .talent-item.selected{border-color:var(--accent);background:var(--card2)}
 .talent-item .t-name{font-weight:600;color:var(--fg);margin-bottom:2px}
@@ -45,7 +45,7 @@ h1{font-size:22px;color:var(--accent);text-align:center;margin-bottom:4px}
 .attr-row .a-btns{display:flex;gap:6px}
 .attr-btn{width:32px;height:32px;background:var(--card2);border:1px solid var(--border);
   border-radius:50%;color:var(--fg);font-size:18px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;transition:.15s}
+  display:flex;align-items:center;justify-content:center;transition:.15}
 .attr-btn:hover{border-color:var(--accent);color:var(--accent)}
 .attr-btn:disabled{opacity:.3;cursor:default}
 .points-info{text-align:center;color:var(--dim);font-size:13px;margin:8px 0}
@@ -1220,8 +1220,12 @@ function startGame(){
   addEventLog("🍼 你出生了。",`出身：${state.origin?state.origin.name:"随机"} · 家境 ${state.attrs.jiajing} · 颜值 ${state.attrs.yanzhi} · 智力 ${state.attrs.zhili} · 体质 ${state.attrs.tizhi}`);
   state.keyEvents.push({age:0,text:"你出生了。"});
   updateGameUI();
-  // 出生默认开始自动播放
-  toggleAuto();
+  // 出生默认自动播放，并立即出第一个事件（避免 0 岁空池空转）
+  state.autoPlay = true;
+  document.getElementById("btn-play").textContent = "⏸ 暂停";
+  document.getElementById("btn-play").classList.add("btn-primary");
+  nextEvent();
+  scheduleAuto();
 }
 
 // ===== 人生重开式：随机间隔 + 自动播放 + 自动/手动选择 =====
@@ -1367,10 +1371,10 @@ function clearAuto(){
   if(state.autoTimer){ clearTimeout(state.autoTimer); state.autoTimer=null; }
 }
 
-function setSpeed(s){
-  state.speed = s;
+function setSpeed(){
+  state.speed = ;
   ["sp1","sp2","sp4"].forEach(id=>document.getElementById(id).classList.remove("btn-primary"));
-  document.getElementById("sp"+s).classList.add("btn-primary");
+  document.getElementById("sp"+).classList.add("btn-primary");
   // 若正在自动播放，重排下一次
   if(state.autoPlay && !state.gameOver) scheduleAuto();
 }
@@ -1541,7 +1545,7 @@ function showDeathReport(){
     }
   }
 
-  const tags = [
+  const 标签 = [
     `<div class="dr-tag"><span class="dt-key">颜值 ${a.yanzhi}</span><span class="dt-val">${tagText(a.yanzhi,"yanzhi")}</span></div>`,
     `<div class="dr-tag"><span class="dt-key">智力 ${a.zhili}</span><span class="dt-val">${tagText(a.zhili,"zhili")}</span></div>`,
     `<div class="dr-tag"><span class="dt-key">体质 ${a.tizhi}</span><span class="dt-val">${tagText(a.tizhi,"tizhi")}</span></div>`,
@@ -1566,7 +1570,7 @@ function showDeathReport(){
     <div class="death-report">
       <div style="font-size:14px;color:var(--dim)">彴约 · 流星划过</div>
       <div class="dr-age">享年 ${age} 岁</div>
-      <div class="dr-tags">${tags.join("")}</div>
+      <div class="dr-tags">${标签.join("")}</div>
       <div class="dr-recall">${recallHtml}</div>
       <div class="dr-remorse">${remorseText}</div>
       <div class="dr-score">${score}</div>
